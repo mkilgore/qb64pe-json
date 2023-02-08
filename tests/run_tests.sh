@@ -22,10 +22,10 @@ show_incorrect_result()
     printf "GOT:      '%s'\n" "$2"
 }
 
-PREFIX=json
+PREFIX=bas
 
 # Each .bas file represents a separate test.
-for test in ./tests/*.bas
+for test in ./tests/bas/*.bas
 do 
     testName=$(basename "$test" .bas)
 

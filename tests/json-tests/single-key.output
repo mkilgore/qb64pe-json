@@ -1,0 +1,7 @@
+Original json: {"key":"value"}
+
+Parse result: Success -1 
+
+Token 1  ( 1 , 15 ), type: Object, value: "{"key":"value"}"
+  Token 2  ( 3 , 5 ), type: Key, value: "key"
+    Token 3  ( 9 , 13 ), type: Value, value: "value"

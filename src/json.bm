@@ -136,6 +136,8 @@ Function JsonQueryFromToken& (json As String, tokens() As jsontok, startToken As
             t = GetChild&(tokens(), t, arrayIndex)
         Else
             Dim found As Long
+            found = 0
+
             For child = 1 To ChildCount&(tokens(), t)
                 Dim c As Long
                 c = GetChild&(tokens(), t, child)
@@ -332,7 +334,12 @@ Function ParseJson& (json As String, tokens() As jsontok)
         End Select
     Next
 
-    ParseJson& = -1
+    'If lvl doesn't go back to zero, then an end brace or bracket was missing
+    If lvl <> 0 Then
+        ParseJson& = 0
+    Else
+        ParseJson& = -1
+    End If
 End Function
 
 Function AddQuotes$ (s As String)
