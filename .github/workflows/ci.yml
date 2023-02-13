@@ -42,16 +42,24 @@ jobs:
       shell: bash
       if: ${{ matrix.prefix == 'win' }}
       run: |
-        wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_win-x64-3.5.0.7z
+        C:\msys64\usr\bin\wget.exe https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_win-${{matrix.platform}}-3.5.0.7z
         7z x ./qb64pe_win-x64-3.5.0.7z
 
-    - name: Install QB64 Windows
+    - name: Install QB64 Linux
       shell: bash
       if: ${{ matrix.prefix == 'lnx' }}
       run: |
-        wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_lnx-x64-3.5.0.7z
+        wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_lnx-3.5.0.7z
         7z x ./qb64pe_win-x64-3.5.0.7z
         ./setup_lnx.sh 1
+
+    - name: Install QB64 Mac OS
+      shell: bash
+      if: ${{ matrix.prefix == 'osx' }}
+      run: |
+        wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_osx-3.5.0.7z
+        7z x ./qb64pe_win-x64-3.5.0.7z
+        ./setup_osx.command 1
 
     - name: QB64 Version
       shell: bash
