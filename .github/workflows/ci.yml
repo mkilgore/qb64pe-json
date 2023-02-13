@@ -60,7 +60,8 @@ jobs:
       run: |
         wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_lnx-3.5.0.tar.gz
         tar -zxf ./qb64pe_lnx-3.5.0.tar.gz
-        ./setup_lnx.sh 1
+        ls -l
+        ./qb64pe/setup_lnx.sh 1
 
     - name: Install QB64 Mac OS
       shell: bash
@@ -68,17 +69,17 @@ jobs:
       run: |
         wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_osx-3.5.0.tar.gz
         tar -zxf ./qb64pe_osx-3.5.0.tar.gz
-        ./setup_osx.command 1
+        ./qb64pe/setup_osx.command 1
 
     - name: QB64 Version
       shell: bash
-      run: ./qb64pe -v
+      run: ./qb64pe/qb64pe -v
 
     - name: Test
       shell: bash
-      run: ./tests/assert.sh ./tests/run_json_tests.sh ./qb64pe
+      run: ./tests/assert.sh ./tests/run_json_tests.sh ./qb64pe/qb64pe
 
     - name: Test2
       shell: bash
-      run: ./tests/assert.sh ./tests/run_tests.sh ./qb64pe
+      run: ./tests/assert.sh ./tests/run_tests.sh ./qb64pe/qb64pe
 
