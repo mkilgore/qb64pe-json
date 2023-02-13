@@ -49,7 +49,7 @@ jobs:
       shell: bash
       if: ${{ matrix.prefix == 'lnx' }}
       working-directory: ./qb64pe
-      run: ./qb64pe/setup_lnx.sh 1
+      run: ./setup_lnx.sh 1
 
     - name: Install dependencies
       if: ${{ matrix.prefix == 'win' }}
@@ -78,7 +78,7 @@ jobs:
     - name: QB64 Version
       shell: bash
       working-directory: ./qb64pe
-      run: ./qb64pe/qb64pe -v
+      run: ./qb64pe -v
 
     - name: Test
       shell: bash
