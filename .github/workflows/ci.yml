@@ -38,6 +38,19 @@ jobs:
       if: ${{ matrix.prefix == 'lnx' }}
       run: sudo apt update && sudo apt install build-essential x11-utils mesa-common-dev libglu1-mesa-dev libasound2-dev zlib1g-dev pulseaudio dbus-x11 libportaudio2 libcurl4-openssl-dev
 
+    - name: Install QB64 Linux
+      shell: bash
+      if: ${{ matrix.prefix == 'lnx' }}
+      run: |
+        wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_lnx-3.5.0.tar.gz
+        tar -zxf ./qb64pe_lnx-3.5.0.tar.gz
+
+    - name: Setup QB64-PE Linxu
+      shell: bash
+      if: ${{ matrix.prefix == 'lnx' }}
+      working-directory: ./qb64pe
+      run: ./qb64pe/setup_lnx.sh 1
+
     - name: Install dependencies
       if: ${{ matrix.prefix == 'win' }}
       run: choco install wget --no-progess
@@ -47,21 +60,12 @@ jobs:
       if: ${{ matrix.prefix == 'win' }}
       run: |
         wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_win-${{matrix.platform}}-3.5.0.7z
-
-    - name: Extract QB64 Windows
-      shell: bash
-      if: ${{ matrix.prefix == 'win' }}
-      run: |
         7z x ./qb64pe_win-${{matrix.platform}}-3.5.0.7z
 
-    - name: Install QB64 Linux
-      shell: bash
-      if: ${{ matrix.prefix == 'lnx' }}
-      run: |
-        wget https://github.com/QB64-Phoenix-Edition/QB64pe/releases/download/v3.5.0/qb64pe_lnx-3.5.0.tar.gz
-        tar -zxf ./qb64pe_lnx-3.5.0.tar.gz
-        ls -l
-        ./qb64pe/setup_lnx.sh 1
+    - uses: maxim-lobanov/setup-xcode@v1
+      if: ${{ matrix.prefix == 'osx' }}
+      with:
+        xcode-version: '11.7.0' # MacOS 10.15 Catalina
 
     - name: Install QB64 Mac OS
       shell: bash
@@ -73,6 +77,7 @@ jobs:
 
     - name: QB64 Version
       shell: bash
+      working-directory: ./qb64pe
       run: ./qb64pe/qb64pe -v
 
     - name: Test
@@ -82,4 +87,3 @@ jobs:
     - name: Test2
       shell: bash
       run: ./tests/assert.sh ./tests/run_tests.sh ./qb64pe/qb64pe
-
