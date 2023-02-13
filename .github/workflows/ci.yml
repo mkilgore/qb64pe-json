@@ -76,14 +76,17 @@ jobs:
         ./qb64pe/setup_osx.command 1
 
     - name: QB64 Version
+      id: qb64pe-version
       shell: bash
       working-directory: ./qb64pe
       run: ./qb64pe -v
 
     - name: Test
+      if: always() && steps.qb64pe-version.outcome == 'success'
       shell: bash
       run: ./tests/assert.sh ./tests/run_json_tests.sh ./qb64pe/qb64pe
 
     - name: Test2
+      if: always() && steps.qb64pe-version.outcome == 'success'
       shell: bash
       run: ./tests/assert.sh ./tests/run_tests.sh ./qb64pe/qb64pe
