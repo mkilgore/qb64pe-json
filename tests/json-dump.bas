@@ -16,7 +16,6 @@ json = ReadFile$(COMMAND$(1))
 
 ret = ParseJson&(json, tokens())
 
-Print "Original json: "; json
 Print "Parse result: ";
 If ret Then
     Print "Success "; ret
