@@ -1,5 +1,3 @@
-Original json: { "key": "value1", "key2": "value2" }
-
 Parse result: Success -1 
 
 Token 1  ( 1 , 37 ), type: Object, value: "{ "key": "value1", "key2": "value2" }"
