@@ -90,6 +90,58 @@ Sub PrintTokens (json As String, tokens() As jsontok, index As Long, indent As L
     Next
 End Sub
 
+Function GetJsonIndex$ (json As String, tokens() As jsontok, idx As Long)
+    Dim res As String, count As Long, i As Long
+
+    SELECT CASE tokens(idx).typ
+        CASE JSONTOK_TYPE_OBJECT:
+            res = "{"
+
+            count = ChildCount&(tokens(), idx)
+            FOR i = 1 To ChildCount&(tokens(), idx)
+                res = res + GetJsonIndex$(json, tokens(), GetChild&(tokens(), idx, i))
+
+                If i < count Then res = res + ","
+            NEXT
+
+            res = res + "}"
+
+        CASE JSONTOK_TYPE_ARRAY:
+            res = "["
+
+            count = ChildCount&(tokens(), idx)
+            FOR i = 1 To ChildCount&(tokens(), idx)
+                res = res + GetJsonIndex$(json, tokens(), GetChild&(tokens(), idx, i))
+
+                If i < count Then res = res + ","
+            NEXT
+
+            res = res + "]"
+
+        CASE JSONTOK_TYPE_VALUE:
+            SELECT CASE tokens(idx).primType
+                CASE JSONTOK_PRIM_STRING:
+                    res = AddQuotes$(GetStrValue$(json, tokens(), idx))
+
+                CASE JSONTOK_PRIM_NUMBER:
+                CASE JSONTOK_PRIM_BOOL:
+                CASE ELSE:
+                    res = GetStrValue$(json, tokens(), idx)
+
+            END SELECT
+
+        CASE JSONTOK_TYPE_KEY:
+            res = AddQuotes$(GetStrValue$(json, tokens(), idx)) + ":" + GetJsonIndex$(json, tokens(), GetChild&(tokens(), idx, 1))
+
+    END SELECT
+
+    GetJsonIndex$ = res
+End Function
+
+Function GetJson$ (json As String, tokens() As jsontok)
+    GetJson$ = GetJsonIndex$(json, tokens(), 1)
+End Function
+
 'Function KeyEqual& (json As String, tokens() As jsontok, k As String, idx As Long)
 '
 'End Function
@@ -103,6 +155,8 @@ Function GetChild& (tokens() As jsontok, idx As Long, childIdx As Long)
 End Function
 
 ' Returns the content of a token (Ex. Value, key name, object's string contents)
+'
+' FIXME: Should do escape sequence parsing
 Function GetStrValue$ (json As String, tokens() As jsontok, idx As Long)
     GetStrValue$ = Mid$(json, tokens(idx).startIdx, tokens(idx).endIdx - tokens(idx).startIdx + 1)
 End Function
@@ -185,6 +239,7 @@ Function TokenTypeString$ (typ As _Byte)
     End Select
 End Function
 
+' FIXME: 'PRIVATE'
 Function FindEndingQuote~& (json As String, index As _Unsigned Long)
     Dim newIdx As _Unsigned Long
     For newIdx = index To Len(json)
@@ -197,14 +252,17 @@ Function FindEndingQuote~& (json As String, index As _Unsigned Long)
     FindEndingQuote~& = 0
 End Function
 
+' FIXME: 'PRIVATE'
 Function IsAlpha& (chr As Long)
     IsAlpha& = (chr >= Asc("a") And chr <= Asc("z")) Or (chr >= Asc("A") And chr <= Asc("Z"))
 End Function
 
+' FIXME: 'PRIVATE'
 Function IsDigit& (chr As Long)
     IsDigit& = chr >= Asc("0") And chr <= Asc("9")
 End Function
 
+' FIXME: 'PRIVATE'
 Function FindEndingWhitespace~& (json As String, index As _Unsigned Long)
     Dim newIdx As _Unsigned Long
     For newIdx = index To Len(json)
@@ -325,6 +383,7 @@ Function ParseJson& (json As String, tokens() As jsontok)
                 strIdx = endingQuote - 1
 
             Case Asc(","):
+                ' Commas get ignored, 
                 'Print Space$(lvl * 2); "comma, currentContainer:"; currentContainer;
                 'currentContainer = tokens(currentContainer).ParentIdx
                 'Print ", newContainer"; currentContainer
@@ -342,6 +401,7 @@ Function ParseJson& (json As String, tokens() As jsontok)
     End If
 End Function
 
+' FIXME: 'PRIVATE'
 Function AddQuotes$ (s As String)
     AddQuotes$ = Chr$(34) + s + Chr$(34)
 End Function

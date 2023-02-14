@@ -42,7 +42,7 @@ do
     compileResultOutput="$RESULTS_DIR/$testName-compile_result.txt"
 
     # -m and -q make sure that we get predictable results
-    "$QB64" -q -m -x "./tests/$testName.bas" -o "$EXE" 1>"$compileResultOutput"
+    "$QB64" -q -m -x "./tests/bas/$testName.bas" -o "$EXE" 1>"$compileResultOutput"
     ERR=$?
 
     (exit $ERR)
