@@ -1,6 +1,46 @@
 
+' Internal types
+
+Const JSONTOK_TYPE_FREE = 0
+
+' 256 tokens per block. More tokens per block means less allocations for very large JSON structures, but higher memory usage for smaller ones.
+Const JSON_BLOCK_SHIFT = 8
+
+Type jsontok
+    typ As _Byte
+    primType As _Byte
+
+    ' Value can either be embedded in the 'value' field, or indexes into the
+    ' original string
+    value As _Mem
+
+    ' Index into original json string
+    startIdx As Long
+    endIdx As Long
+
+    ' Index of parent token.
+    ' If token is FREE, then this is the index next free token
+    '
+    ' Note that ParentIdx is not filled-in for manually created tokens, so it
+    ' should not be relied upon.
+    ParentIdx As Long
+
+    ' Array of Long's indicating indxes of child tokens
+    ChildrenIdxs As _Mem
+End Type
+
+Type JsonTokenBlock
+    m As _Mem
+End Type
+
+Sub ___JsonResetError()
+    JsonHadError = JSON_ERR_SUCCESS
+    JsonError = ""
+End Sub
 
 Sub JsonInit(json As Json)
+    ___JsonResetError
+
     json.RootToken = 0
     json.TotalTokens = 0
     json.TotalBlocks = 0
@@ -14,6 +54,7 @@ End Sub
 
 Sub JsonClear(json As Json)
     Dim b As JsonTokenBlock, i As Long
+    ___JsonResetError
 
     For i = 0 To json.TotalBlocks - 1
         _MemGet json.TokenBlocks, json.TokenBlocks.OFFSET + i * Len(b), b
@@ -28,6 +69,7 @@ End Sub
 ' Initializes a new JsonTokenBlock, including the space for tokens and free list 
 '
 ' blockIdx is this block's index in the block list
+' FIXME: PRIVATE
 Sub JsonTokenBlockInit(b As JsonTokenBlock, blockIdxCpy As Long, nextFree As Long)
     Dim i As Long, tokCount As Long, t As jsontok, blockIdx As Long
 
@@ -47,6 +89,7 @@ Sub JsonTokenBlockInit(b As JsonTokenBlock, blockIdxCpy As Long, nextFree As Lon
     Next
 End Sub
 
+' FIXME: PRIVATE
 Sub JsonTokenBlockClear(b As JsonTokenBlock)
     Dim i As Long, t As jsontok, count As Long
 
@@ -60,11 +103,13 @@ Sub JsonTokenBlockClear(b As JsonTokenBlock)
     _MemFree b.m
 End Sub
 
+' FIXME: PRIVATE
 Sub JsonTokenClear(t As jsontok)
     If t.value.OFFSET <> 0 Then _MemFree t.value
     If t.ChildrenIdxs.OFFSET <> 0 Then _MemFree t.ChildrenIdxs
 End Sub
 
+' FIXME: PRIVATE
 Sub JsonTokenAddChild(t As jsontok, child As Long)
     Dim m As _Mem, childCount As _Offset
 
@@ -84,17 +129,20 @@ Sub JsonTokenAddChild(t As jsontok, child As Long)
     End If
 End Sub
 
+' FIXME: PRIVATE
 Function JsonTokenGetChild&(t As jsontok, idx As _Offset)
     Dim l As Long
     JsonTokenGetChild& = _MemGet(t.ChildrenIdxs, t.ChildrenIdxs.OFFSET + idx * Len(l), Long)
 End Function
 
+' FIXME: PRIVATE
 Function JsonTokenGetChildCount%&(t As jsontok)
     JsonTokenGetChildCount%& = t.ChildrenIdxs.SIZE / 4
 End Function
 
 Function JsonGetEmptyToken&(j As Json)
     Dim b As JsonTokenBlock, t As jsontok
+    ___JsonResetError
 
     If j.NextFree = -1 Then
         Dim m As _Mem
@@ -122,8 +170,10 @@ Function JsonGetEmptyToken&(j As Json)
     JsonGetEmptyToken& = res&
 End Function
 
+' FIXME: Mark all child tokens as well recursively
 Sub JsonMarkEmptyToken(j As Json, idx As Long)
     Dim b As JsonTokenBlock, t As jsontok
+    ___JsonResetError
 
     JsonGetToken j, idx, t
 
@@ -135,17 +185,102 @@ Sub JsonMarkEmptyToken(j As Json, idx As Long)
     j.NextFree = idx
 End Sub
 
+' FIXME: PRIVATE
 Sub JsonGetToken(j As Json, idx As Long, t As jsontok)
     Dim b As JsonTokenBlock
     _MemGet j.TokenBlocks, j.TokenBlocks.OFFSET + _Shr(idx, JSON_BLOCK_SHIFT) * Len(b), b
     _MemGet b.m, b.m.OFFSET + (idx And (_Shl(1, JSON_BLOCK_SHIFT) - 1)) * Len(t), t
 End Sub
 
+' FIXME: PRIVATE
 Sub JsonPutToken(j As Json, idx As Long, t As jsontok)
     Dim b As JsonTokenBlock
     _MemGet j.TokenBlocks, j.TokenBlocks.OFFSET + _Shr(idx, JSON_BLOCK_SHIFT) * Len(b), b
     _MemPut b.m, b.m.OFFSET + (idx And (_Shl(1, JSON_BLOCK_SHIFT) - 1)) * Len(t), t
 End Sub
+
+Function ___JsonEscapeString$(s As String)
+    Dim res As String, i As Long
+
+    For i = 1 To Len(s)
+        Select Case Asc(s, i)
+            Case 13: ' new line
+                res = res + "\n"
+
+            Case 10: ' Carriage Return
+                res = res + "\r"
+
+            Case 34: ' Double quote character
+                res = res + "\" + Chr$(34)
+
+            Case Asc("\"):
+                res = res + "\\"
+
+            Case 9: ' Tab
+                res = res + "\t"
+
+            Case 12: ' formfeed
+                res = res + "\f"
+
+            Case 8: ' Backspace
+                res = res + "\b"
+
+            Case Else:
+                res = res + Chr$(Asc(s, i))
+        End Select
+    Next
+
+    ___JsonEscapeString$ = res
+End Function
+
+Function ___JsonUnescapeString$(s As String)
+    Dim res As String, i As Long, curIdx As Long
+    curIdx = 1
+
+    ' FIXME: Handle badly formatted strings
+    Do
+        i = Instr(curIdx, s, "\")
+        If i = 0 Then
+            res = res + MID$(s, curIdx)
+            Exit Do
+        End If
+
+        res = res + MID$(s, curIdx, i - 1)
+
+        Select Case Asc(s, i + 1)
+            Case Asc("n"):
+                res = res + Chr$(13)
+
+            Case Asc("r"):
+                res = res + Chr$(10)
+
+            Case 34: ' Double quote
+                res = res + chr$(34)
+
+            Case Asc("\"):
+                res = res + "\"
+
+            Case Asc("t"):
+                res = res + Chr$(9)
+
+            Case Asc("f"):
+                res = res + Chr$(12)
+
+            Case Asc("b"):
+                res = res + Chr$(8)
+
+            Case Asc("/"):
+                res = res + "/"
+
+            Case Asc("u"):
+                ' FIXME: Decode hex into UTF-8 sequence
+        End Select
+
+        curIdx = i + 2
+    Loop
+
+    ___JsonUnescapeString$ = res
+End Function
 
 Function ___JsonTokenCreatePrim&(j As Json, s As String, primTyp As _Byte)
     Dim idx As Long, t As jsontok
@@ -165,26 +300,32 @@ Function ___JsonTokenCreatePrim&(j As Json, s As String, primTyp As _Byte)
 End Function
 
 Function JsonTokenCreateString&(j As Json, s As String)
-    JsonTokenCreateString& = ___JsonTokenCreatePrim&(j, s, JSONTOK_PRIM_STRING)
+    ___JsonResetError
+    JsonTokenCreateString& = ___JsonTokenCreatePrim&(j, ___JsonEscapeString$(s), JSONTOK_PRIM_STRING)
 End Function
 
 Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
     Dim s As String
+    ___JsonResetError
     If b Then s = "true" Else s = "false"
 
     JsonTokenCreateBoolean& = ___JsonTokenCreatePrim&(j, s, JSONTOK_PRIM_BOOL)
 End Function
 
 Function JsonTokenCreateInteger&(j As Json, i As _Integer64)
+    ___JsonResetError
     JsonTokenCreateInteger& = ___JsonTokenCreatePrim&(j, LTRIM$(RTRIM$(STR$(i))), JSONTOK_PRIM_NUMBER)
 End Function
 
 Function JsonTokenCreateSingle&(j As Json, s As Double)
+    ___JsonResetError
     JsonTokenCreateSingle& = ___JsonTokenCreatePrim&(j, LTRIM$(RTRIM$(STR$(s))), JSONTOK_PRIM_NUMBER)
 End Function
 
 Function JsonTokenCreateKey&(j As Json, k As String, inner As Long)
     Dim idx As Long, t As jsontok
+    ___JsonResetError
+
     idx = JsonGetEmptyToken&(j)
 
     JsonGetToken j, idx, t
@@ -203,6 +344,8 @@ End Function
 
 Function JsonTokenCreateArray&(j As Json)
     Dim idx As Long, t As jsontok
+    ___JsonResetError
+
     idx = JsonGetEmptyToken&(j)
 
     JsonGetToken j, idx, t
@@ -216,21 +359,21 @@ End Function
 
 Sub JsonTokenArrayAdd(j As Json, arrayIdx As Long, childidx As Long)
     Dim t As jsontok
+    ___JsonResetError
+
     JsonGetToken j, arrayIdx, t
-
     JsonTokenAddChild t, childidx
-
     JsonPutToken j, arrayIdx, t
 End Sub
 
 Function JsonTokenCreateObject&(j As Json)
     Dim idx As Long, t As jsontok
+    ___JsonResetError
+
     idx = JsonGetEmptyToken&(j)
 
     JsonGetToken j, idx, t
-
     t.typ = JSONTOK_TYPE_OBJECT
-
     JsonPutToken j, idx, t
 
     JsonTokenCreateObject& = idx
@@ -238,14 +381,16 @@ End Function
 
 Sub JsonTokenObjectAdd(j As Json, objectIdx As Long, childidx As Long)
     Dim t As jsontok
+    ___JsonResetError
+
     JsonGetToken j, objectIdx, t
-
     JsonTokenAddChild t, childidx
-
     JsonPutToken j, objectIdx, t
 End Sub
 
 Sub JsonSetRootToken(j As json, idx As Long)
+    ___JsonResetError
+
     j.RootToken = idx
 End Sub
 
@@ -329,6 +474,7 @@ End Sub
 '  
 '  'PrintTokens json$, tokens(), 1, 0
 
+' FIXME: PRIVATE
 Sub PrintTokens (json As String, j As json, index As Long, indent As Long)
     Dim t As jsontok
     JsonGetToken j, index, t
@@ -347,6 +493,7 @@ End Sub
 
 Function JsonRenderIndex$ (j As Json, idx As Long)
     Dim res As String, count As _Offset, i As _Offset, t As jsontok
+    ___JsonResetError
 
     JsonGetToken j, idx, t
 
@@ -380,17 +527,17 @@ Function JsonRenderIndex$ (j As Json, idx As Long)
         CASE JSONTOK_TYPE_VALUE:
             SELECT CASE t.primType
                 CASE JSONTOK_PRIM_STRING:
-                    res = AddQuotes$(GetStrValue$(j, t))
+                    res = AddQuotes$(GetRawStrValue$(j, t))
 
                 CASE JSONTOK_PRIM_NUMBER:
                 CASE JSONTOK_PRIM_BOOL:
                 CASE ELSE:
-                    res = GetStrValue$(j, t)
+                    res = GetRawStrValue$(j, t)
 
             END SELECT
 
         CASE JSONTOK_TYPE_KEY:
-            res = AddQuotes$(GetStrValue$(j, t)) + ":" + JsonRenderIndex$(j, JsonTokenGetChild&(t, 0))
+            res = AddQuotes$(GetRawStrValue$(j, t)) + ":" + JsonRenderIndex$(j, JsonTokenGetChild&(t, 0))
 
     END SELECT
 
@@ -401,15 +548,16 @@ Function JsonRender$ (j As json)
     JsonRender$ = JsonRenderIndex$(j, j.RootToken)
 End Function
 
-Function GetStrValue$(j As json, t As jsontok)
-    Dim res as String
-
+' FIXME: PRIVATE
+Function GetRawStrValue$(j As json, t As jsontok)
     If t.value.OFFSET <> 0 Then
+        Dim res as String
+
         res = Space$(t.value.SIZE)
         _MemGet t.value, t.value.OFFSET, res
-        GetStrValue$ = res
-    Else
-        GetStrValue$ = Mid$(j.origStr, t.startIdx, t.endIdx - t.startIdx + 1)
+        GetRawStrValue$ = res
+    ElseIf j.origStr <> "" Then
+        GetRawStrValue$ = Mid$(j.origStr, t.startIdx, t.endIdx - t.startIdx + 1)
     End If
 End Function
 
@@ -501,6 +649,7 @@ End Function
 '     If t Then JsonQueryValue$ = GetStrValue$(json, tokens(), t)
 ' End Function
 
+' FIXME: PRIVATE
 Function TokenTypeString$ (typ As _Byte)
     Select Case typ
         Case JSONTOK_TYPE_OBJECT: TokenTypeString$ = "Object"
@@ -548,6 +697,7 @@ Function FindEndingWhitespace~& (json As String, index As _Unsigned Long)
     FindEndingWhitespace~& = 0
 End Function
 
+' FIXME: PRIVATE
 Sub JsonSetError(ero As Long, txt As String)
     JsonHadError = ero
     JsonError = txt
@@ -556,6 +706,7 @@ End Sub
 Function ParseJson& (json As String, j As Json)
     Dim currentToken As Long, currentContainer As Long
     Dim curTok As jsontok, curCont As jsontok, prevTok As jsontok, tmpTok As jsontok
+    ___JsonResetError
 
     If Not j.IsInitialized Then JsonSetError -1, "JSON object is not initialized": ParseJson& = 0: Exit Function
 

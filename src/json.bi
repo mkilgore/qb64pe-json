@@ -1,7 +1,12 @@
 
+' If a Json procedure has an error, the error code will be stored in
+' JsonHadError and a text version of the error will be in JsonError.
+'
+' On success JsonHadError will be zero
 Dim Shared JsonError As String, JsonHadError As Long
 
-Const JSONTOK_TYPE_FREE = 0
+Const JSON_ERR_SUCCESS = 0
+
 Const JSONTOK_TYPE_OBJECT = 1
 Const JSONTOK_TYPE_ARRAY = 2
 Const JSONTOK_TYPE_VALUE = 3
@@ -10,30 +15,6 @@ Const JSONTOK_TYPE_KEY = 4
 Const JSONTOK_PRIM_STRING = 1
 Const JSONTOK_PRIM_NUMBER = 2
 Const JSONTOK_PRIM_BOOL = 3
-
-' 256 tokens per block
-Const JSON_BLOCK_SHIFT = 8
-
-Type jsontok
-    typ As _Byte
-    primType As _Byte
-
-    ' Value can either be embedded in the 'value' field, or indexes into the
-    ' original string
-    value As _Mem
-
-    startIdx As Long ' Index into original json string
-    endIdx As Long
-
-    ' Index of parent token.
-    ' If token is FREE, then this is the index next free token
-    ParentIdx As Long
-    ChildrenIdxs As _Mem ' Array of Long's for indexes
-End Type
-
-Type JsonTokenBlock
-    m As _Mem
-End Type
 
 Type Json
     origStr As String
@@ -58,13 +39,12 @@ Declare Sub JsonTokenBlockClear(b As JsonTokenBlock)
 Declare Function JsonGetEmptyToken&(j As Json)
 Declare Sub JsonMarkEmptyToken(j As Json, idx As Long)
 
-' Parses a JSON string into an array of tokens holding its structure
+' Parses a JSON string into a json object. The json object should already be initialized.
 '
-' Index 1 in the array will hold the root object token
-'
-' Array should be ReDim, as it will be resized if necessary
-Declare Function ParseJson& (json As String, j As Json)
+' Return value indicates whether the parse was a success. JsonHadError can also be checked
+Declare Function JsonParse&(j As Json, json As String)
 
+' String contents should be UTF-8. Contents will be escaped automatically as necessary.
 Declare Function JsonTokenCreateString&(j As Json, s As String)
 Declare Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
 Declare Function JsonTokenCreateInteger&(j As Json, i As _Integer64)
@@ -84,8 +64,29 @@ Declare Sub      JsonSetRootToken(j As json, idx As Long)
 Declare Function JsonRender$(j As json)
 Declare Function JsonRenderIndex$(j As json, idx As Long)
 
-Declare Function GetStrValue$(j As json, t As jsontok)
+' Returns the token's value in string form:
+'
+'    Key:    Key name
+'    Value:  String version of the value itself. Bools are "true" or "false". Strings are UTF-8
+'    Array:  Error
+'    Object: Error
+'
+' To convert a token into a JSON string, use JsonRender$()
+Declare Function JsonTokenGetStr$(j As json, idx As Long)
+Declare Function JsonTokenTotalChildren&(j As json, idx As Long)
+Declare Function JsonTokenGetChild&(j As json, idx As Long, childIdx As Long) ' Children are numbered from zero
 
+' Returns a JSONTOK_TYPE_* value
+Declare Function JsonTokenGetType&(j As Json, idx As Long)
+
+' Only works if the token is a JSONTOK_TYPE_VALUE. Returns a JSONTOK_PRIM_* value
+Declare Function JsonTokenGetPrimType&(j As Json, idx As Long)
+
+Declare Function JsonQueryToken&(j As Json, query As String)
+Declare Function JsonQueryFromToken&(j As Json, query As String, startToken As Long)
+
+Declare Function JsonQueryValue$(j As Json, query As String)
+Declare Function JsonQueryFromValue$(j As Json, query As String, startToken As Long)
 
 ' DECLARE Function ChildCount& (tokens() As jsontok, idx As Long)
 ' DECLARE Function GetChild& (tokens() As jsontok, idx As Long, childIdx As Long)
@@ -107,5 +108,3 @@ Declare Function GetStrValue$(j As json, t As jsontok)
 ' DECLARE Function JsonQueryFromValue$ (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
 ' 
 ' DECLARE Function TokenTypeString$ (typ As _Byte)
-
-DECLARE Sub PrintTokens (json As String, tokens() As jsontok, index As Long, indent As Long)
