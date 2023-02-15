@@ -1,4 +1,4 @@
-Option _Explicit
+' Option _Explicit
 $Console:Only
 
 ChDir _StartDir$
@@ -8,13 +8,14 @@ ON ERROR GOTO errorhand
 '$include:'../src/json.bi'
 
 Dim ret As Long, json As String
-ReDim tokens(10000) As jsontok
+Dim j As json
+JsonInit j
 
 json = ReadFile$(COMMAND$(1))
 
 ' json = "{" + AddQuotes$("key1") + ":true}"
 
-ret = ParseJson&(json, tokens())
+ret = ParseJson&(json, j)
 
 Print "Parse result: ";
 If ret Then
@@ -24,8 +25,9 @@ Else
 End If
 Print
 
-PrintTokens json, tokens(), 1, 0
+PrintTokens json, j, 1, 0
 
+JsonClear j
 System
 
 errorhand:

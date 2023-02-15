@@ -53,11 +53,11 @@ do
 
     # Some tests do not have an output or err file because they should
     # compile successfully but cannot be run on the build agents
-    if [ ! -f "./tests/$testName.output" ]; then
+    if [ ! -f "./tests/bas/$testName.output" ]; then
         continue
     fi
 
-    expectedResult="$(cat "./tests/$testName.output")"
+    expectedResult="$(cat "./tests/bas/$testName.output")"
 
     testResult=$("$EXE" "$RESULTS_DIR" "$testName" 2>&1)
     assert_success_named "run" "Execution Error:" echo "$testResult"

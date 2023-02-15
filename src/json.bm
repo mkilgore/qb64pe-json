@@ -1,3 +1,255 @@
+
+
+Sub JsonInit(json As Json)
+    json.RootToken = 0
+    json.TotalTokens = 0
+    json.TotalBlocks = 0
+    json.NextFree = -1
+
+    ' Dummy _Mem, makes things a bit easier since there is no NULL
+    json.TokenBlocks = _MemNew(1)
+
+    json.IsInitialized = -1
+End Sub
+
+Sub JsonClear(json As Json)
+    Dim b As JsonTokenBlock, i As Long
+
+    For i = 0 To json.TotalBlocks - 1
+        _MemGet json.TokenBlocks, json.TokenBlocks.OFFSET + i * Len(b), b
+
+        JsonTokenBlockClear b
+    Next
+
+    _MemFree json.TokenBlocks
+    json.IsInitialized = 0
+End Sub
+
+' Initializes a new JsonTokenBlock, including the space for tokens and free list 
+'
+' blockIdx is this block's index in the block list
+Sub JsonTokenBlockInit(b As JsonTokenBlock, blockIdxCpy As Long, nextFree As Long)
+    Dim i As Long, tokCount As Long, t As jsontok, blockIdx As Long
+
+    tokCount = _Shl(1, JSON_BLOCK_SHIFT)
+    blockIdx = _Shl(blockIdxCpy, JSON_BLOCK_SHIFT)
+
+    ' Don't need to zero it, as we're going to _MemPut the zero'd jsontok into
+    ' it anyway
+    b.m = _MemNew(tokCount * Len(t))
+
+    For i = tokCount - 1 To 0 Step -1
+        t.ParentIdx = nextFree
+
+        _MemPut b.m, b.m.OFFSET + i * Len(t), t
+
+        nextFree = blockIdx Or i
+    Next
+End Sub
+
+Sub JsonTokenBlockClear(b As JsonTokenBlock)
+    Dim i As Long, t As jsontok, count As Long
+
+    count = _Shl(1, JSON_BLOCK_SHIFT)
+
+    For i = 0 To count - 1
+        _MemGet b.m, b.m.OFFSET + i * Len(t), t
+        JsonTokenClear t
+    Next
+
+    _MemFree b.m
+End Sub
+
+Sub JsonTokenClear(t As jsontok)
+    If t.value.OFFSET <> 0 Then _MemFree t.value
+    If t.ChildrenIdxs.OFFSET <> 0 Then _MemFree t.ChildrenIdxs
+End Sub
+
+Sub JsonTokenAddChild(t As jsontok, child As Long)
+    Dim m As _Mem, childCount As _Offset
+
+    If t.ChildrenIdxs.OFFSET <> 0 Then
+        childCount = t.ChildrenIdxs.SIZE / 4 + 1
+
+        m = _MemNew(childCount * Len(child))
+        _MemCopy t.ChildrenIdxs, t.ChildrenIdxs.OFFSET, t.ChildrenIdxs.SIZE To m, m.OFFSET
+        _memFree t.ChildrenIdxs
+
+        _MemPut m, m.OFFSET + (childCount - 1) * Len(child), child
+        t.ChildrenIdxs = m
+    Else
+        t.ChildrenIdxs = _MemNew(Len(child))
+
+        _MemPut t.ChildrenIdxs, t.ChildrenIdxs.OFFSET, child
+    End If
+End Sub
+
+Function JsonTokenGetChild&(t As jsontok, idx As _Offset)
+    Dim l As Long
+    JsonTokenGetChild& = _MemGet(t.ChildrenIdxs, t.ChildrenIdxs.OFFSET + idx * Len(l), Long)
+End Function
+
+Function JsonTokenGetChildCount%&(t As jsontok)
+    JsonTokenGetChildCount%& = t.ChildrenIdxs.SIZE / 4
+End Function
+
+Function JsonGetEmptyToken&(j As Json)
+    Dim b As JsonTokenBlock, t As jsontok
+
+    If j.NextFree = -1 Then
+        Dim m As _Mem
+        j.TotalBlocks = j.TotalBlocks + 1
+
+        m = _MemNew(j.TotalBlocks * Len(b))
+        _MemCopy j.TokenBlocks, j.TokenBlocks.OFFSET, j.TokenBlocks.SIZE To m, m.OFFSET
+
+        _MemFree j.TokenBlocks
+        j.TokenBlocks = m
+
+        JsonTokenBlockInit b, j.TotalBlocks - 1, j.NextFree
+        _MemPut j.TokenBlocks, j.TokenBlocks.OFFSET + (j.TotalBlocks - 1) * Len(b), b
+    End If
+
+    res& = j.NextFree
+
+    JsonGetToken j, j.NextFree, t
+
+    j.NextFree = t.ParentIdx
+    t.ParentIdx = 0
+
+    JsonPutToken j, res&, t
+
+    JsonGetEmptyToken& = res&
+End Function
+
+Sub JsonMarkEmptyToken(j As Json, idx As Long)
+    Dim b As JsonTokenBlock, t As jsontok
+
+    JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_FREE
+    t.ParentIdx = j.NextFree
+
+    JsonPutToken j, idx, t
+
+    j.NextFree = idx
+End Sub
+
+Sub JsonGetToken(j As Json, idx As Long, t As jsontok)
+    Dim b As JsonTokenBlock
+    _MemGet j.TokenBlocks, j.TokenBlocks.OFFSET + _Shr(idx, JSON_BLOCK_SHIFT) * Len(b), b
+    _MemGet b.m, b.m.OFFSET + (idx And (_Shl(1, JSON_BLOCK_SHIFT) - 1)) * Len(t), t
+End Sub
+
+Sub JsonPutToken(j As Json, idx As Long, t As jsontok)
+    Dim b As JsonTokenBlock
+    _MemGet j.TokenBlocks, j.TokenBlocks.OFFSET + _Shr(idx, JSON_BLOCK_SHIFT) * Len(b), b
+    _MemPut b.m, b.m.OFFSET + (idx And (_Shl(1, JSON_BLOCK_SHIFT) - 1)) * Len(t), t
+End Sub
+
+Function ___JsonTokenCreatePrim&(j As Json, s As String, primTyp As _Byte)
+    Dim idx As Long, t As jsontok
+    idx = JsonGetEmptyToken&(j)
+
+    JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_VALUE
+    t.primType = JSONTOK_PRIM_STRING
+
+    t.value = _MemNew(Len(s))
+    _MemPut t.value, t.value.OFFSET, s
+
+    JsonPutToken j, idx, t
+
+    ___JsonTokenCreatePrim& = idx
+End Function
+
+Function JsonTokenCreateString&(j As Json, s As String)
+    JsonTokenCreateString& = ___JsonTokenCreatePrim&(j, s, JSONTOK_PRIM_STRING)
+End Function
+
+Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
+    Dim s As String
+    If b Then s = "true" Else s = "false"
+
+    JsonTokenCreateBoolean& = ___JsonTokenCreatePrim&(j, s, JSONTOK_PRIM_BOOL)
+End Function
+
+Function JsonTokenCreateInteger&(j As Json, i As _Integer64)
+    JsonTokenCreateInteger& = ___JsonTokenCreatePrim&(j, LTRIM$(RTRIM$(STR$(i))), JSONTOK_PRIM_NUMBER)
+End Function
+
+Function JsonTokenCreateSingle&(j As Json, s As Double)
+    JsonTokenCreateSingle& = ___JsonTokenCreatePrim&(j, LTRIM$(RTRIM$(STR$(s))), JSONTOK_PRIM_NUMBER)
+End Function
+
+Function JsonTokenCreateKey&(j As Json, k As String, inner As Long)
+    Dim idx As Long, t As jsontok
+    idx = JsonGetEmptyToken&(j)
+
+    JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_KEY
+
+    t.value = _MemNew(Len(k))
+    _MemPut t.value, t.value.OFFSET, k
+
+    JsonTokenAddChild t, inner
+
+    JsonPutToken j, idx, t
+
+    JsonTokenCreateKey& = idx
+End Function
+
+Function JsonTokenCreateArray&(j As Json)
+    Dim idx As Long, t As jsontok
+    idx = JsonGetEmptyToken&(j)
+
+    JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_ARRAY
+
+    JsonPutToken j, idx, t
+
+    JsonTokenCreateArray& = idx
+End Function
+
+Sub JsonTokenArrayAdd(j As Json, arrayIdx As Long, childidx As Long)
+    Dim t As jsontok
+    JsonGetToken j, arrayIdx, t
+
+    JsonTokenAddChild t, childidx
+
+    JsonPutToken j, arrayIdx, t
+End Sub
+
+Function JsonTokenCreateObject&(j As Json)
+    Dim idx As Long, t As jsontok
+    idx = JsonGetEmptyToken&(j)
+
+    JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_OBJECT
+
+    JsonPutToken j, idx, t
+
+    JsonTokenCreateObject& = idx
+End Function
+
+Sub JsonTokenObjectAdd(j As Json, objectIdx As Long, childidx As Long)
+    Dim t As jsontok
+    JsonGetToken j, objectIdx, t
+
+    JsonTokenAddChild t, childidx
+
+    JsonPutToken j, objectIdx, t
+End Sub
+
+Sub JsonSetRootToken(j As json, idx As Long)
+    j.RootToken = idx
+End Sub
+
+
 '  Option _Explicit
 '  
 '  Screen _NewImage(1024, 800, 32)
@@ -77,158 +329,177 @@
 '  
 '  'PrintTokens json$, tokens(), 1, 0
 
-Sub PrintTokens (json As String, tokens() As jsontok, index As Long, indent As Long)
+Sub PrintTokens (json As String, j As json, index As Long, indent As Long)
     Dim t As jsontok
-    t = tokens(index)
+    JsonGetToken j, index, t
 
     Print Space$(indent); "Token"; index; " ("; t.startIdx; ","; t.endIdx; "), type: "; TokenTypeString$(t.typ); ", value: "; AddQuotes$(Mid$(json, t.startIdx, t.endIdx - t.startIdx + 1))
     ' Print Space$(indent); "- Value: "; 
 
-    Dim i As Long
-    For i = 1 To Len(t.ChildrenIdxs) / 4
-        PrintTokens json, tokens(), CVL(Mid$(t.ChildrenIdxs, (i - 1) * 4 + 1, 4)), indent + 2
-    Next
+    Dim i As _Offset, max As _Offset
+    max = JsonTokenGetChildCount%&(t)
+
+    while i < max
+        PrintTokens json, j, JsonTokenGetChild(t, i), indent + 2
+        i = i + 1
+    Wend
 End Sub
 
-Function GetJsonIndex$ (json As String, tokens() As jsontok, idx As Long)
-    Dim res As String, count As Long, i As Long
+Function JsonRenderIndex$ (j As Json, idx As Long)
+    Dim res As String, count As _Offset, i As _Offset, t As jsontok
 
-    SELECT CASE tokens(idx).typ
+    JsonGetToken j, idx, t
+
+    SELECT CASE t.typ
         CASE JSONTOK_TYPE_OBJECT:
             res = "{"
 
-            count = ChildCount&(tokens(), idx)
-            FOR i = 1 To ChildCount&(tokens(), idx)
-                res = res + GetJsonIndex$(json, tokens(), GetChild&(tokens(), idx, i))
+            count = JsonTokenGetChildCount%&(t)
+            While i < count
+                res = res + JsonRenderIndex$(j, JsonTokenGetChild&(t, i))
 
+                i = i + 1
                 If i < count Then res = res + ","
-            NEXT
+            Wend
 
             res = res + "}"
 
         CASE JSONTOK_TYPE_ARRAY:
             res = "["
 
-            count = ChildCount&(tokens(), idx)
-            FOR i = 1 To ChildCount&(tokens(), idx)
-                res = res + GetJsonIndex$(json, tokens(), GetChild&(tokens(), idx, i))
+            count = JsonTokenGetChildCount%&(t)
+            While i < count
+                res = res + JsonRenderIndex$(j, JsonTokenGetChild&(t, i))
 
+                i = i + 1
                 If i < count Then res = res + ","
-            NEXT
+            Wend
 
             res = res + "]"
 
         CASE JSONTOK_TYPE_VALUE:
-            SELECT CASE tokens(idx).primType
+            SELECT CASE t.primType
                 CASE JSONTOK_PRIM_STRING:
-                    res = AddQuotes$(GetStrValue$(json, tokens(), idx))
+                    res = AddQuotes$(GetStrValue$(j, t))
 
                 CASE JSONTOK_PRIM_NUMBER:
                 CASE JSONTOK_PRIM_BOOL:
                 CASE ELSE:
-                    res = GetStrValue$(json, tokens(), idx)
+                    res = GetStrValue$(j, t)
 
             END SELECT
 
         CASE JSONTOK_TYPE_KEY:
-            res = AddQuotes$(GetStrValue$(json, tokens(), idx)) + ":" + GetJsonIndex$(json, tokens(), GetChild&(tokens(), idx, 1))
+            res = AddQuotes$(GetStrValue$(j, t)) + ":" + JsonRenderIndex$(j, JsonTokenGetChild&(t, 0))
 
     END SELECT
 
-    GetJsonIndex$ = res
+    JsonRenderIndex$ = res
 End Function
 
-Function GetJson$ (json As String, tokens() As jsontok)
-    GetJson$ = GetJsonIndex$(json, tokens(), 1)
+Function JsonRender$ (j As json)
+    JsonRender$ = JsonRenderIndex$(j, j.RootToken)
 End Function
 
-'Function KeyEqual& (json As String, tokens() As jsontok, k As String, idx As Long)
-'
-'End Function
+Function GetStrValue$(j As json, t As jsontok)
+    Dim res as String
 
-Function ChildCount& (tokens() As jsontok, idx As Long)
-    ChildCount& = Len(tokens(idx).ChildrenIdxs) / 4
+    If t.value.OFFSET <> 0 Then
+        res = Space$(t.value.SIZE)
+        _MemGet t.value, t.value.OFFSET, res
+        GetStrValue$ = res
+    Else
+        GetStrValue$ = Mid$(j.origStr, t.startIdx, t.endIdx - t.startIdx + 1)
+    End If
 End Function
 
-Function GetChild& (tokens() As jsontok, idx As Long, childIdx As Long)
-    GetChild& = CVL(Mid$(tokens(idx).ChildrenIdxs, (childIdx - 1) * 4 + 1, 4))
-End Function
-
-' Returns the content of a token (Ex. Value, key name, object's string contents)
-'
-' FIXME: Should do escape sequence parsing
-Function GetStrValue$ (json As String, tokens() As jsontok, idx As Long)
-    GetStrValue$ = Mid$(json, tokens(idx).startIdx, tokens(idx).endIdx - tokens(idx).startIdx + 1)
-End Function
-
-' Returns the token index that the query refers too
-Function JsonQueryFromToken& (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
-    Dim t As Long
-    t = startToken
-
-    While Len(query)
-        Dim colon As Long, k As String, child As long
-        colon = InStr(query, ":")
-
-        If colon Then
-            k = Mid$(query, 1, colon - 1)
-            query = Mid$(query, colon + 1)
-        Else
-            k = query
-            query = ""
-        End If
-
-        ' Array index
-        If Asc(k, 1) = Asc("[") Then
-            If Asc(k, Len(k)) <> Asc("]") Then er = "ERROR: Index missing closing ]": Exit Function
-            Dim arrayIndex As Long
-            arrayIndex = Val(Mid$(k, 2, Len(k) - 2))
-
-            If arrayIndex <= 0 Or arrayIndex > ChildCount&(tokens(), t) Then er = "ERROR: Array index out of range!": Exit Function
-
-            ' This is either a value, or an object inside the array
-            t = GetChild&(tokens(), t, arrayIndex)
-        Else
-            Dim found As Long
-            found = 0
-
-            For child = 1 To ChildCount&(tokens(), t)
-                Dim c As Long
-                c = GetChild&(tokens(), t, child)
-
-                ' Print "Checking child"; child; ", value: "; AddQuotes$(GetStrValue$(json, tokens(), c)); ", check: "; k
-                If GetStrValue$(json, tokens(), c) = k Then
-                    found = GetChild&(tokens(), c, 1) ' Get the child of the key node
-                    Exit For
-                End If
-            Next
-
-            If found = 0 Then er = "ERROR: Key " + AddQuotes$(k) + " not found!": Exit Function
-
-            t = found
-        End If
-    Wend
-
-    JsonQueryFromToken& = t
-End Function
-
-Function JsonQueryToken& (json As String, tokens() As jsontok, query As String, er As String)
-    JsonQueryToken& = JsonQueryFromToken&(json, tokens(), 1, query, er)
-End Function
-
-' Returns the value of the token the query refers too
-Function JsonQueryFromValue$ (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
-    Dim t As Long
-    t = JsonQueryFromToken&(json, tokens(), startToken, query, er)
-    If t Then JsonQueryFromValue$ = GetStrValue$(json, tokens(), t)
-End Function
-
-' Returns the value of the token the query refers too
-Function JsonQueryValue$ (json As String, tokens() As jsontok, query As String, er As String)
-    Dim t As Long
-    t = JsonQueryToken&(json, tokens(), query, er)
-    If t Then JsonQueryValue$ = GetStrValue$(json, tokens(), t)
-End Function
+' 'Function KeyEqual& (json As String, tokens() As jsontok, k As String, idx As Long)
+' '
+' 'End Function
+' 
+' Function ChildCount& (tokens() As jsontok, idx As Long)
+'     ChildCount& = Len(tokens(idx).ChildrenIdxs) / 4
+' End Function
+' 
+' Function GetChild& (tokens() As jsontok, idx As Long, childIdx As Long)
+'     GetChild& = CVL(Mid$(tokens(idx).ChildrenIdxs, (childIdx - 1) * 4 + 1, 4))
+' End Function
+' 
+' ' Returns the content of a token (Ex. Value, key name, object's string contents)
+' '
+' ' FIXME: Should do escape sequence parsing
+' Function GetStrValue$ (json As String, tokens() As jsontok, idx As Long)
+'     GetStrValue$ = Mid$(json, tokens(idx).startIdx, tokens(idx).endIdx - tokens(idx).startIdx + 1)
+' End Function
+' 
+' ' Returns the token index that the query refers too
+' Function JsonQueryFromToken& (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
+'     Dim t As Long
+'     t = startToken
+' 
+'     While Len(query)
+'         Dim colon As Long, k As String, child As long
+'         colon = InStr(query, ":")
+' 
+'         If colon Then
+'             k = Mid$(query, 1, colon - 1)
+'             query = Mid$(query, colon + 1)
+'         Else
+'             k = query
+'             query = ""
+'         End If
+' 
+'         ' Array index
+'         If Asc(k, 1) = Asc("[") Then
+'             If Asc(k, Len(k)) <> Asc("]") Then er = "ERROR: Index missing closing ]": Exit Function
+'             Dim arrayIndex As Long
+'             arrayIndex = Val(Mid$(k, 2, Len(k) - 2))
+' 
+'             If arrayIndex <= 0 Or arrayIndex > ChildCount&(tokens(), t) Then er = "ERROR: Array index out of range!": Exit Function
+' 
+'             ' This is either a value, or an object inside the array
+'             t = GetChild&(tokens(), t, arrayIndex)
+'         Else
+'             Dim found As Long
+'             found = 0
+' 
+'             For child = 1 To ChildCount&(tokens(), t)
+'                 Dim c As Long
+'                 c = GetChild&(tokens(), t, child)
+' 
+'                 ' Print "Checking child"; child; ", value: "; AddQuotes$(GetStrValue$(json, tokens(), c)); ", check: "; k
+'                 If GetStrValue$(json, tokens(), c) = k Then
+'                     found = GetChild&(tokens(), c, 1) ' Get the child of the key node
+'                     Exit For
+'                 End If
+'             Next
+' 
+'             If found = 0 Then er = "ERROR: Key " + AddQuotes$(k) + " not found!": Exit Function
+' 
+'             t = found
+'         End If
+'     Wend
+' 
+'     JsonQueryFromToken& = t
+' End Function
+' 
+' Function JsonQueryToken& (json As String, tokens() As jsontok, query As String, er As String)
+'     JsonQueryToken& = JsonQueryFromToken&(json, tokens(), 1, query, er)
+' End Function
+' 
+' ' Returns the value of the token the query refers too
+' Function JsonQueryFromValue$ (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
+'     Dim t As Long
+'     t = JsonQueryFromToken&(json, tokens(), startToken, query, er)
+'     If t Then JsonQueryFromValue$ = GetStrValue$(json, tokens(), t)
+' End Function
+' 
+' ' Returns the value of the token the query refers too
+' Function JsonQueryValue$ (json As String, tokens() As jsontok, query As String, er As String)
+'     Dim t As Long
+'     t = JsonQueryToken&(json, tokens(), query, er)
+'     If t Then JsonQueryValue$ = GetStrValue$(json, tokens(), t)
+' End Function
 
 Function TokenTypeString$ (typ As _Byte)
     Select Case typ
@@ -277,10 +548,20 @@ Function FindEndingWhitespace~& (json As String, index As _Unsigned Long)
     FindEndingWhitespace~& = 0
 End Function
 
-Function ParseJson& (json As String, tokens() As jsontok)
+Sub JsonSetError(ero As Long, txt As String)
+    JsonHadError = ero
+    JsonError = txt
+End Sub
+
+Function ParseJson& (json As String, j As Json) ' tokens() As jsontok)
     Dim currentToken As Long, currentContainer As Long
+    Dim curTok As jsontok, curCont As jsontok, prevTok As jsontok, tmpTok As jsontok
+
+    If Not j.IsInitialized Then JsonSetError -1, "JSON object is not initialized": ParseJson& = 0: Exit Function
+
+    currentContainer = JsonGetEmptyToken&(j)
     currentToken = 0
-    currentContainer = 0
+
     Dim strIdx As _Unsigned Long
     Dim lvl As Long
     lvl = 0
@@ -295,16 +576,22 @@ Function ParseJson& (json As String, tokens() As jsontok)
         Select Case chr
             Case Asc("{"), Asc("["):
                 ' Start of an object
-                currentToken = currentToken + 1
+                currentToken = JsonGetEmptyToken&(j)
 
-                If chr = Asc("[") Then tokens(currentToken).typ = JSONTOK_TYPE_ARRAY Else tokens(currentToken).typ = JSONTOK_TYPE_OBJECT
+                JsonGetToken j, currentToken, curTok
+                JsonGetToken j, currentContainer, curCont
 
-                tokens(currentToken).startIdx = strIdx
-                tokens(currentToken).ParentIdx = currentContainer
+                If chr = Asc("[") Then curTok.typ = JSONTOK_TYPE_ARRAY Else curTok.typ = JSONTOK_TYPE_OBJECT
 
-                tokens(currentContainer).ChildrenIdxs = tokens(currentContainer).ChildrenIdxs + MKL$(currentToken)
+                curTok.startIdx = strIdx
+                curTok.ParentIdx = currentContainer
 
-                'Print Space$(lvl * 2); "New object, currentContainer: "; currentContainer; ", currentToken:"; currentToken
+                if currentContainer <> currentToken Then JsonTokenAddChild curCont, currentToken
+
+                ' Print Space$(lvl * 2); "New object, currentContainer: "; currentContainer; ", currentToken:"; currentToken; ", typ: "; curTok.typ
+                JsonPutToken j, currentToken, curTok
+                if currentContainer <> currentToken Then JsonPutToken j, currentContainer, curCont
+
                 currentContainer = currentToken
                 lvl = lvl + 1
 
@@ -313,46 +600,62 @@ Function ParseJson& (json As String, tokens() As jsontok)
                 ' Print Space$(lvl * 2); "End object, currentContainer: "; currentContainer
 
                 ' Find the object or array closest in the tree
-                While tokens(currentContainer).typ <> JSONTOK_TYPE_OBJECT And tokens(currentContainer).typ <> JSONTOK_TYPE_ARRAY
-                    currentContainer = tokens(currentContainer).ParentIdx
+                JsonGetToken j, currentContainer, curCont
+                While curCont.typ <> JSONTOK_TYPE_OBJECT And curCont.typ <> JSONTOK_TYPE_ARRAY
+                    currentContainer = curCont.ParentIdx
+                    JsonGetToken j, currentContainer, curCont
+                    ' Print Space$(lvl * 2); "type: "; curCont.typ; " cont:"; currentContainer
                     lvl = lvl - 1
                 Wend
 
-                If tokens(currentContainer).typ = JSONTOK_TYPE_ARRAY Then
+                If curCont.typ = JSONTOK_TYPE_ARRAY Then
                     '    Print "ending array!"
                     '    Sleep
                 End If
 
-                'Print Space$(lvl * 2); "Search container: "; currentContainer; ", final container: "; tokens(currentContainer).ParentIdx
-                tokens(currentContainer).endIdx = strIdx
-                currentContainer = tokens(currentContainer).ParentIdx
-                lvl = lvl - 1
+                ' Print Space$(lvl * 2); "Search container: "; currentContainer; ", final container: "; curCont.ParentIdx
+                curCont.endIdx = strIdx
+                JsonPutToken j, currentContainer, curCont
 
-                If tokens(currentContainer).typ = JSONTOK_TYPE_KEY Then currentContainer = tokens(currentContainer).ParentIdx: lvl = lvl - 1
+                currentContainer = curCont.ParentIdx
+                lvl = lvl - 1
+                JsonGetToken j, currentContainer, curCont
+
+                If curCont.typ = JSONTOK_TYPE_KEY Then currentContainer = curCont.ParentIdx: lvl = lvl - 1
 
             Case 34: ' Quote character
-                currentToken = currentToken + 1
+                prevToken = currentToken
+                currentToken = JsonGetEmptyToken&(j)
 
                 endingQuote = FindEndingQuote~&(json, strIdx + 1)
-                'Print Space$(lvl * 2); "Found quoted value, start:"; strIdx; ", end:"; endingQuote
+                ' Print Space$(lvl * 2); "Found quoted value, start:"; strIdx; ", end:"; endingQuote; ", currentToken:"; currentToken
                 If endingQuote = 0 Then
                     ParseJson& = 0
                     Exit Function
                 End If
 
-                If tokens(currentToken - 1).typ <> JSONTOK_TYPE_KEY Then tokens(currentToken).typ = JSONTOK_TYPE_KEY Else tokens(currentToken).typ = JSONTOK_TYPE_VALUE
-                tokens(currentToken).startIdx = strIdx + 1
-                tokens(currentToken).endIdx = endingQuote - 1
-                tokens(currentToken).ParentIdx = currentContainer
+                JsonGetToken j, prevToken, prevTok
+                JsonGetToken j, currentToken, curTok
+                JsonGetToken j, currentContainer, curCont
 
-                tokens(currentContainer).ChildrenIdxs = tokens(currentContainer).ChildrenIdxs + MKL$(currentToken)
+                If prevTok.typ <> JSONTOK_TYPE_KEY Then curTok.typ = JSONTOK_TYPE_KEY Else curTok.typ = JSONTOK_TYPE_VALUE
+                curTok.startIdx = strIdx + 1
+                curTok.endIdx = endingQuote - 1
+                curTok.ParentIdx = currentContainer
 
-                If tokens(currentToken).typ = JSONTOK_TYPE_KEY Then currentContainer = currentToken Else currentContainer = tokens(currentContainer).ParentIdx
-                If tokens(currentToken).typ = JSONTOK_TYPE_KEY Then
-                    'Print Space$(lvl * 2); "quoted value, v: "; GetStrValue$(json, tokens(), currentToken); ", Was key, parent: "; tokens(currentToken).ParentIdx
+                JsonTokenAddChild curCont, currentToken
+
+                JsonPutToken j, currentToken, curTok
+                JsonPutToken j, currentContainer, curCont
+                ' Print Space$(lvl * 2); "currentToken typ:"; curTok.typ; ", currentContainer:"; curCont.typ
+
+                If curTok.typ = JSONTOK_TYPE_KEY Then currentContainer = currentToken Else currentContainer = curCont.ParentIdx
+
+                If curTok.typ = JSONTOK_TYPE_KEY Then
+                    ' Print Space$(lvl * 2); "quoted value, v: "; GetStrValue$(json, tokens(), currentToken); ", Was key, parent: "; curCont.ParentIdx
                     lvl = lvl + 1
                 Else
-                    'Print Space$(lvl * 2); "quoted value, v: "; GetStrValue$(json, tokens(), currentToken); ", Was value, parent: "; tokens(currentToken).ParentIdx
+                    ' Print Space$(lvl * 2); "quoted value, v: "; GetStrValue$(json, tokens(), currentToken); ", Was value, parent: "; curCont.ParentIdx
                     lvl = lvl - 1
                 End If
                 ' Skips processing the end quote
@@ -360,31 +663,39 @@ Function ParseJson& (json As String, tokens() As jsontok)
 
             Case Asc("A") To Asc("Z"), Asc("a") To Asc("z"), Asc("0") To Asc("9"):
                 ' Unquoted value
-                currentToken = currentToken + 1
+                currentToken = JsonGetEmptyToken&(j)
 
                 endingQuote = FindEndingWhitespace~&(json, strIdx + 1)
-                'Print Space$(lvl * 2); "Found value, start:"; strIdx; ", end:"; endingQuote
+                ' Print Space$(lvl * 2); "Found value, start:"; strIdx; ", end:"; endingQuote
                 If endingQuote = 0 Then
                     ParseJson& = 0
                     Exit Function
                 End If
 
-                tokens(currentToken).typ = JSONTOK_TYPE_VALUE
-                tokens(currentToken).startIdx = strIdx
-                tokens(currentToken).endIdx = endingQuote - 1
-                tokens(currentToken).ParentIdx = currentContainer
+                JsonGetToken j, currentToken, curTok
+                JsonGetToken j, currentContainer, curCont
 
-                tokens(currentContainer).ChildrenIdxs = tokens(currentContainer).ChildrenIdxs + MKL$(currentToken)
+                curTok.typ = JSONTOK_TYPE_VALUE
+                curTok.startIdx = strIdx
+                curTok.endIdx = endingQuote - 1
+                curTok.ParentIdx = currentContainer
+
+
+                JsonTokenAddChild curCont, currentToken
+                ' tokens(currentContainer).ChildrenIdxs = tokens(currentContainer).ChildrenIdxs + MKL$(currentToken)
+
+                JsonPutToken j, currentToken, curTok
+                JsonPutToken j, currentContainer, curCont
 
                 '' Next Comma
-                If tokens(currentContainer).typ <> JSONTOK_TYPE_ARRAY Then currentContainer = tokens(currentContainer).ParentIdx: lvl = lvl - 1
+                If curCont.typ <> JSONTOK_TYPE_ARRAY Then currentContainer = curCont.ParentIdx: lvl = lvl - 1
 
                 ' subtract one to ensure we process the ending character
                 strIdx = endingQuote - 1
 
             Case Asc(","):
                 ' Commas get ignored, 
-                'Print Space$(lvl * 2); "comma, currentContainer:"; currentContainer;
+                ' Print Space$(lvl * 2); "comma, currentContainer:"; currentContainer;
                 'currentContainer = tokens(currentContainer).ParentIdx
                 'Print ", newContainer"; currentContainer
                 'lvl = lvl - 1
