@@ -553,7 +553,7 @@ Sub JsonSetError(ero As Long, txt As String)
     JsonError = txt
 End Sub
 
-Function ParseJson& (json As String, j As Json) ' tokens() As jsontok)
+Function ParseJson& (json As String, j As Json)
     Dim currentToken As Long, currentContainer As Long
     Dim curTok As jsontok, curCont As jsontok, prevTok As jsontok, tmpTok As jsontok
 

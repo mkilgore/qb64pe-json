@@ -63,7 +63,7 @@ Declare Sub JsonMarkEmptyToken(j As Json, idx As Long)
 ' Index 1 in the array will hold the root object token
 '
 ' Array should be ReDim, as it will be resized if necessary
-Declare Function ParseJson& (json As String, tokens() As jsontok)
+Declare Function ParseJson& (json As String, j As Json)
 
 Declare Function JsonTokenCreateString&(j As Json, s As String)
 Declare Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
