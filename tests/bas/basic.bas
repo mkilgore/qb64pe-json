@@ -47,7 +47,7 @@ JsonInit j
 Dim json As String
 json = "{" + AddQuotes$("key1") + ":true, " + AddQuotes$("key2") + ": 20       , " + AddQuotes$("foo") + ": [ 20, 30, 40 ]}"
 
-ret = ParseJson&(json, j)
+ret = JsonParse&(json, j)
 
 Print "Original json: "; json
 Print "Return: "; ret
@@ -89,5 +89,9 @@ JsonClear j
 ' Print "Generated JSON: "; JsonRender$(json, tokens())
 
 System
+
+Sub foo(a)
+
+End Sub
 
 '$include:'../../src/json.bm'
