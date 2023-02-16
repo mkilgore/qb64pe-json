@@ -3,7 +3,9 @@
 
 Const JSONTOK_TYPE_FREE = 0
 
-' 256 tokens per block. More tokens per block means less allocations for very large JSON structures, but higher memory usage for smaller ones.
+' 256 tokens per block. More tokens per block means less allocations and better
+' performance for very large JSON structures, but higher memory usage for
+' smaller ones.
 Const JSON_BLOCK_SHIFT = 8
 
 Type jsontok
