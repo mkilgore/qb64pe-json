@@ -1,13 +1,6 @@
 
 ' Internal types
 
-Const JSONTOK_TYPE_FREE = 0
-
-' 256 tokens per block. More tokens per block means less allocations and better
-' performance for very large JSON structures, but higher memory usage for
-' smaller ones.
-Const JSON_BLOCK_SHIFT = 8
-
 Type jsontok
     typ As _Byte
     primType As _Byte
@@ -132,14 +125,35 @@ Sub JsonTokenAddChild(t As jsontok, child As Long)
 End Sub
 
 ' FIXME: PRIVATE
-Function JsonTokenGetChild&(t As jsontok, idx As _Offset)
+Function ___JsonTokenGetChild&(t As jsontok, idx As _Offset)
     Dim l As Long
-    JsonTokenGetChild& = _MemGet(t.ChildrenIdxs, t.ChildrenIdxs.OFFSET + idx * Len(l), Long)
+    ___JsonTokenGetChild& = _MemGet(t.ChildrenIdxs, t.ChildrenIdxs.OFFSET + idx * Len(l), Long)
 End Function
 
 ' FIXME: PRIVATE
 Function JsonTokenGetChildCount%&(t As jsontok)
     JsonTokenGetChildCount%& = t.ChildrenIdxs.SIZE / 4
+End Function
+
+Function JsonTokenTotalChildren&(j As Json, idx As Long)
+    Dim t As jsontok
+    JsonGetToken j, idx, t
+
+    JsonTokenTotalChildren& = _CV(_Integer64, _MK$(_Offset, t.ChildrenIdxs.SIZE / 4))
+End Function
+
+Function JsonTokenGetChild&(j As Json, idx As Long, childIdx As Long)
+    Dim t As jsontok
+    JsonGetToken j, idx, t
+
+    JsonTokenGetChild& = ___JsonTokenGetChild&(t, childIdx)
+End function
+
+Function JsonTokenGetType&(j As Json, idx As Long)
+    Dim t As jsontok
+    JsonGetToken j, idx, t
+
+    JsonTokenGetType& = t.typ
 End Function
 
 Function JsonGetEmptyToken&(j As Json)
@@ -247,7 +261,7 @@ Function ___JsonUnescapeString$(s As String)
             Exit Do
         End If
 
-        res = res + MID$(s, curIdx, i - 1)
+        res = res + MID$(s, curIdx, i - curIdx)
 
         Select Case Asc(s, i + 1)
             Case Asc("n"):
@@ -396,86 +410,6 @@ Sub JsonSetRootToken(j As json, idx As Long)
     j.RootToken = idx
 End Sub
 
-
-'  Option _Explicit
-'  
-'  Screen _NewImage(1024, 800, 32)
-'  
-'  $Unstable:Http
-'  Dim h&
-'  Dim s$
-'  Dim json$
-'  
-'  h& = _OpenClient("https://pokeapi.co/api/v2/pokemon/gallade")
-'  
-'  Print LOF(h&)
-'  
-'  While Not EOF(h&)
-'      _Limit 100
-'      Get h&, , s$
-'      json$ = json$ + s$
-'  Wend
-'  
-'  'PRINT LEN(json$)
-'  'PRINT json$
-'  
-'  'OPEN "./result5.txt" FOR OUTPUT AS #5
-'  'PRINT #5, json$
-'  'CLOSE #5
-'  
-'  
-'  ReDim tokens(100000) As jsontok
-'  
-'  ReDim _Preserve tokens(100001) As jsontok
-'  
-'  
-'  ' json$ = "{" + AddQuotes$("key") + ": " + _
-'  '            "{ " + AddQuotes$("key2") + ": true  , " + AddQuotes$("key3") + ": false }, " + _
-'  '            "{ " + AddQuotes$("key7") + ": [ " + _
-'  '                "{ " + AddQuotes$("key8") + ": false }, " + _
-'  '                "{ " + AddQuotes$("key9") + ": false }, " + _
-'  '                "{ " + AddQuotes$("key10") + ": false } " + _
-'  '            "]," + _
-'  '            AddQuotes$("key4") + ": true," + _
-'  '            "{ " + AddQuotes$("key5") + ": true, " + AddQuotes$("key6") + ": false } " + _
-'  '        "}"
-'  
-'  'json$ = "{ " + AddQuotes$("key") + " : true , " + AddQuotes$("k2") + " : " + _
-'  '            "{ " + AddQuotes$("k3") + " : asdf, " + AddQuotes$("k4") + ":fffff }, " + _
-'  '            AddQuotes$("k9") + " :" + _
-'  '            "{ " + AddQuotes$("k3") + " : asdf, " + AddQuotes$("k4") + ":fffff } " + _
-'  '        "}"
-'  
-'  
-'  'Print json$
-'  
-'  Dim l As Long
-'  l = ParseJson&(json$, tokens())
-'  'Print "Parse result:"; l
-'  
-'  Dim g As String
-'  Dim er As String
-'  
-'  Dim tok As Long
-'  
-'  tok = JsonQueryToken&(json$, tokens(), "moves:[30]:version_group_details:[3]:move_learn_method", er)
-'  
-'  g = JsonQueryFromValue$(json$, tokens(), tok, "name", er)
-'  
-'  'Sleep
-'  Print "Error: "; er
-'  Print "Value: "; g
-'  
-'  g = JsonQueryFromValue$(json$, tokens(), tok, "url", er)
-'  
-'  'Sleep
-'  Print "Error: "; er
-'  Print "Value: "; g
-'  'Print "tok"
-'  
-'  
-'  'PrintTokens json$, tokens(), 1, 0
-
 ' FIXME: PRIVATE
 Sub PrintTokens (json As String, j As json, index As Long, indent As Long)
     Dim t As jsontok
@@ -488,7 +422,7 @@ Sub PrintTokens (json As String, j As json, index As Long, indent As Long)
     max = JsonTokenGetChildCount%&(t)
 
     while i < max
-        PrintTokens json, j, JsonTokenGetChild(t, i), indent + 2
+        PrintTokens json, j, ___JsonTokenGetChild(t, i), indent + 2
         i = i + 1
     Wend
 End Sub
@@ -505,7 +439,7 @@ Function JsonRenderIndex$ (j As Json, idx As Long)
 
             count = JsonTokenGetChildCount%&(t)
             While i < count
-                res = res + JsonRenderIndex$(j, JsonTokenGetChild&(t, i))
+                res = res + JsonRenderIndex$(j, ___JsonTokenGetChild&(t, i))
 
                 i = i + 1
                 If i < count Then res = res + ","
@@ -518,7 +452,7 @@ Function JsonRenderIndex$ (j As Json, idx As Long)
 
             count = JsonTokenGetChildCount%&(t)
             While i < count
-                res = res + JsonRenderIndex$(j, JsonTokenGetChild&(t, i))
+                res = res + JsonRenderIndex$(j, ___JsonTokenGetChild&(t, i))
 
                 i = i + 1
                 If i < count Then res = res + ","
@@ -539,7 +473,7 @@ Function JsonRenderIndex$ (j As Json, idx As Long)
             END SELECT
 
         CASE JSONTOK_TYPE_KEY:
-            res = AddQuotes$(GetRawStrValue$(j, t)) + ":" + JsonRenderIndex$(j, JsonTokenGetChild&(t, 0))
+            res = AddQuotes$(GetRawStrValue$(j, t)) + ":" + JsonRenderIndex$(j, ___JsonTokenGetChild&(t, 0))
 
     END SELECT
 
@@ -566,93 +500,91 @@ End Function
 ' 'Function KeyEqual& (json As String, tokens() As jsontok, k As String, idx As Long)
 ' '
 ' 'End Function
-' 
-' Function ChildCount& (tokens() As jsontok, idx As Long)
-'     ChildCount& = Len(tokens(idx).ChildrenIdxs) / 4
-' End Function
-' 
-' Function GetChild& (tokens() As jsontok, idx As Long, childIdx As Long)
-'     GetChild& = CVL(Mid$(tokens(idx).ChildrenIdxs, (childIdx - 1) * 4 + 1, 4))
-' End Function
-' 
-' ' Returns the content of a token (Ex. Value, key name, object's string contents)
-' '
-' ' FIXME: Should do escape sequence parsing
-' Function GetStrValue$ (json As String, tokens() As jsontok, idx As Long)
-'     GetStrValue$ = Mid$(json, tokens(idx).startIdx, tokens(idx).endIdx - tokens(idx).startIdx + 1)
-' End Function
-' 
-' ' Returns the token index that the query refers too
-' Function JsonQueryFromToken& (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
-'     Dim t As Long
-'     t = startToken
-' 
-'     While Len(query)
-'         Dim colon As Long, k As String, child As long
-'         colon = InStr(query, ":")
-' 
-'         If colon Then
-'             k = Mid$(query, 1, colon - 1)
-'             query = Mid$(query, colon + 1)
-'         Else
-'             k = query
-'             query = ""
-'         End If
-' 
-'         ' Array index
-'         If Asc(k, 1) = Asc("[") Then
-'             If Asc(k, Len(k)) <> Asc("]") Then er = "ERROR: Index missing closing ]": Exit Function
-'             Dim arrayIndex As Long
-'             arrayIndex = Val(Mid$(k, 2, Len(k) - 2))
-' 
-'             If arrayIndex <= 0 Or arrayIndex > ChildCount&(tokens(), t) Then er = "ERROR: Array index out of range!": Exit Function
-' 
-'             ' This is either a value, or an object inside the array
-'             t = GetChild&(tokens(), t, arrayIndex)
-'         Else
-'             Dim found As Long
-'             found = 0
-' 
-'             For child = 1 To ChildCount&(tokens(), t)
-'                 Dim c As Long
-'                 c = GetChild&(tokens(), t, child)
-' 
-'                 ' Print "Checking child"; child; ", value: "; AddQuotes$(GetStrValue$(json, tokens(), c)); ", check: "; k
-'                 If GetStrValue$(json, tokens(), c) = k Then
-'                     found = GetChild&(tokens(), c, 1) ' Get the child of the key node
-'                     Exit For
-'                 End If
-'             Next
-' 
-'             If found = 0 Then er = "ERROR: Key " + AddQuotes$(k) + " not found!": Exit Function
-' 
-'             t = found
-'         End If
-'     Wend
-' 
-'     JsonQueryFromToken& = t
-' End Function
-' 
-' Function JsonQueryToken& (json As String, tokens() As jsontok, query As String, er As String)
-'     JsonQueryToken& = JsonQueryFromToken&(json, tokens(), 1, query, er)
-' End Function
-' 
-' ' Returns the value of the token the query refers too
-' Function JsonQueryFromValue$ (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
-'     Dim t As Long
-'     t = JsonQueryFromToken&(json, tokens(), startToken, query, er)
-'     If t Then JsonQueryFromValue$ = GetStrValue$(json, tokens(), t)
-' End Function
-' 
-' ' Returns the value of the token the query refers too
-' Function JsonQueryValue$ (json As String, tokens() As jsontok, query As String, er As String)
-'     Dim t As Long
-'     t = JsonQueryToken&(json, tokens(), query, er)
-'     If t Then JsonQueryValue$ = GetStrValue$(json, tokens(), t)
-' End Function
+
+' Returns the token index that the query refers too
+Function JsonQueryFromToken&(j As Json, startToken As Long, query As String)
+    Dim t As Long, tok As jsontok
+    ___JsonResetError
+
+    t = startToken
+
+    While Len(query)
+        Dim colon As Long, k As String, child As long
+        colon = InStr(query, ":")
+
+        If colon Then
+            k = Mid$(query, 1, colon - 1)
+            query = Mid$(query, colon + 1)
+        Else
+            k = query
+            query = ""
+        End If
+
+        ' Array index
+        If Asc(k, 1) = Asc("[") Then
+            If Asc(k, Len(k)) <> Asc("]") Then ___JsonSetError JSON_ERR_BADQUERY, "Missing closing ]" : Exit Function
+            Dim arrayIndex As Long
+            arrayIndex = Val(Mid$(k, 2, Len(k) - 2))
+
+            If arrayIndex < 0 Or arrayIndex >= JsonTokenTotalChildren&(j, t) Then ___JsonSetError JSON_ERR_OUTOFRANGE, "Array index out of range": Exit Function
+
+            ' This is either a value, or an object inside the array
+            t = JsonTokenGetChild&(j, t, arrayIndex)
+        Else
+            Dim found As Long
+            found = 0
+
+            For child = 0 To JsonTokenTotalChildren&(j, t) - 1
+                Dim c As Long, typ As Long
+                c = JsonTokenGetChild&(j, t, child)
+                JsonGetToken j, c, tok
+
+                If tok.typ <> JSONTOK_TYPE_KEY Then _Continue
+
+                ' Print "Checking child"; child; ", value: "; AddQuotes$(GetStrValue$(json, tokens(), c)); ", check: "; k
+                If GetRawStrValue$(j, tok) = k Then
+                    found = JsonTokenGetChild&(j, c, 0) ' Get the child of the key node
+                    Exit For
+                End If
+            Next
+
+            If found = 0 Then ___JsonSetError JSON_ERR_KEYNOTFOUND, "Key " + AddQuotes$(k) + " not found!": Exit Function
+
+            t = found
+        End If
+    Wend
+
+    JsonQueryFromToken& = t
+End Function
+
+Function JsonQueryToken&(j As Json, query As String)
+    JsonQueryToken& = JsonQueryFromToken&(j, j.RootToken, query)
+End Function
+
+' Returns the value of the token the query refers too
+Function JsonQueryFromValue$ (j As Json, startToken As Long, query As String)
+    Dim t As Long, tok As jsontok
+    t = JsonQueryFromToken&(j, startToken, query)
+
+    If t = 0 Then Exit Function
+
+    JsonGetToken j, t, tok
+    JsonQueryFromValue$ = GetRawStrValue$(j, tok)
+End Function
+
+' Returns the value of the token the query refers too
+Function JsonQueryValue$ (j As Json, query As String)
+    Dim t As Long, tok As jsontok
+    t = JsonQueryToken&(j, query)
+
+    If t = 0 Then Exit Function
+
+    JsonGetToken j, t, tok
+    JsonQueryValue$ = GetRawStrValue$(j, tok)
+End Function
 
 ' FIXME: PRIVATE
-Function TokenTypeString$ (typ As _Byte)
+Function TokenTypeString$(typ As _Byte)
     Select Case typ
         Case JSONTOK_TYPE_OBJECT: TokenTypeString$ = "Object"
         Case JSONTOK_TYPE_ARRAY: TokenTypeString$ = "Array"
@@ -662,7 +594,7 @@ Function TokenTypeString$ (typ As _Byte)
 End Function
 
 ' FIXME: 'PRIVATE'
-Function FindEndingQuote~& (json As String, index As _Unsigned Long)
+Function FindEndingQuote~&(json As String, index As _Unsigned Long)
     Dim newIdx As _Unsigned Long
     For newIdx = index To Len(json)
         If Asc(json, newIdx) = 34 Then
@@ -675,17 +607,17 @@ Function FindEndingQuote~& (json As String, index As _Unsigned Long)
 End Function
 
 ' FIXME: 'PRIVATE'
-Function IsAlpha& (chr As Long)
+Function IsAlpha&(chr As Long)
     IsAlpha& = (chr >= Asc("a") And chr <= Asc("z")) Or (chr >= Asc("A") And chr <= Asc("Z"))
 End Function
 
 ' FIXME: 'PRIVATE'
-Function IsDigit& (chr As Long)
+Function IsDigit&(chr As Long)
     IsDigit& = chr >= Asc("0") And chr <= Asc("9")
 End Function
 
 ' FIXME: 'PRIVATE'
-Function FindEndingWhitespace~& (json As String, index As _Unsigned Long)
+Function FindEndingWhitespace~&(json As String, index As _Unsigned Long)
     Dim newIdx As _Unsigned Long
     For newIdx = index To Len(json)
         Dim a As Long
@@ -700,17 +632,19 @@ Function FindEndingWhitespace~& (json As String, index As _Unsigned Long)
 End Function
 
 ' FIXME: PRIVATE
-Sub JsonSetError(ero As Long, txt As String)
+Sub ___JsonSetError(ero As Long, txt As String)
     JsonHadError = ero
     JsonError = txt
 End Sub
 
-Function ParseJson& (json As String, j As Json)
+Function JsonParse&(json As String, j As Json)
     Dim currentToken As Long, currentContainer As Long
     Dim curTok As jsontok, curCont As jsontok, prevTok As jsontok, tmpTok As jsontok
     ___JsonResetError
 
-    If Not j.IsInitialized Then JsonSetError -1, "JSON object is not initialized": ParseJson& = 0: Exit Function
+    If Not j.IsInitialized Then ___JsonSetError -1, "JSON object is not initialized": ParseJson& = 0: Exit Function
+
+    j.OrigStr = json
 
     currentContainer = JsonGetEmptyToken&(j)
     currentToken = 0

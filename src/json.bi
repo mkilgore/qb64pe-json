@@ -6,7 +6,11 @@
 Dim Shared JsonError As String, JsonHadError As Long
 
 Const JSON_ERR_SUCCESS = 0
+Const JSON_ERR_BADQUERY = -1
+Const JSON_ERR_OUTOFRANGE = -2
+Const JSON_ERR_KEYNOTFOUND = -3
 
+Const JSONTOK_TYPE_FREE = 0
 Const JSONTOK_TYPE_OBJECT = 1
 Const JSONTOK_TYPE_ARRAY = 2
 Const JSONTOK_TYPE_VALUE = 3
@@ -16,8 +20,13 @@ Const JSONTOK_PRIM_STRING = 1
 Const JSONTOK_PRIM_NUMBER = 2
 Const JSONTOK_PRIM_BOOL = 3
 
+' 256 tokens per block. More tokens per block means less allocations and better
+' performance for very large JSON structures, but higher memory usage for
+' smaller ones.
+Const JSON_BLOCK_SHIFT = 8
+
 Type Json
-    origStr As String
+    OrigStr As String
     RootToken As Long
     TotalTokens As Long
     TotalBlocks As Long
@@ -53,7 +62,7 @@ Declare Function JsonTokenCreateSingle&(j As Json, s As Double)
 Declare Function JsonTokenCreateKey&(j As Json, k As String, inner As Long)
 
 Declare Function JsonTokenCreateArray&(j As Json)
-Declare Sub      JsonTokenArrayAdd(j As Json, idx As Long)
+Declare Sub      JsonTokenArrayAdd(j As Json, arrayIdx As Long, childidx As Long)
 
 Declare Function JsonTokenCreateObject&(j As Json)
 Declare Sub      JsonTokenObjectAdd(j As Json, idx As Long)
@@ -63,6 +72,13 @@ Declare Sub      JsonSetRootToken(j As json, idx As Long)
 
 Declare Function JsonRender$(j As json)
 Declare Function JsonRenderIndex$(j As json, idx As Long)
+
+Type JsonFormat
+    Indented As _Byte
+End Type
+
+Declare Function JsonRenderFormatted$(j As Json, format As JsonFormat)
+Declare Function JsonRenderIndexFormatted$(j As Json, idx As Long, format As JsonFormat)
 
 ' Returns the token's value in string form:
 '
@@ -88,23 +104,18 @@ Declare Function JsonQueryFromToken&(j As Json, query As String, startToken As L
 Declare Function JsonQueryValue$(j As Json, query As String)
 Declare Function JsonQueryFromValue$(j As Json, query As String, startToken As Long)
 
-' DECLARE Function ChildCount& (tokens() As jsontok, idx As Long)
-' DECLARE Function GetChild& (tokens() As jsontok, idx As Long, childIdx As Long)
-' DECLARE Function GetStrValue$ (json As String, tokens() As jsontok, idx As Long)
-
 ' Takes a JSON query string and finds the JSON tokent that it refers too.
 '
 ' You can either recieve the value directly with `Value$`, or recieve the token index via `Token&`
+
+Declare Function JsonQueryToken&(j As Json, query As String)
+Declare Function JsonQueryValue$(j As Json, query As String)
+
+' Takes a JSON query string and finds the JSON tokent that it refers too.
+' This does not start at the root token, but instead starts at token 'startToken'
 '
-' If there was an error with the query, the result is in 'er'
-' DECLARE Function JsonQueryToken& (json As String, tokens() As jsontok, query As String, er As String)
-' DECLARE Function JsonQueryValue$ (json As String, tokens() As jsontok, query As String, er As String)
-' 
-' ' Takes a JSON query string and finds the JSON tokent that it refers too.
-' ' This does not start at the root token, but instead starts at token 'startToken'
-' '
-' ' You can either recieve the value directly with `Value$`, or recieve the token index via `Token&`
-' DECLARE Function JsonQueryFromToken& (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
-' DECLARE Function JsonQueryFromValue$ (json As String, tokens() As jsontok, startToken As Long, query As String, er As String)
-' 
+' You can either recieve the value directly with `Value$`, or recieve the token index via `Token&`
+Declare Function JsonQueryFromToken&(j As Json, startToken As Long, query As String)
+Declare Function JsonQueryFromValue$(j As Json, startToken As Long, query As String)
+
 ' DECLARE Function TokenTypeString$ (typ As _Byte)
