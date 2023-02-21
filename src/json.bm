@@ -193,7 +193,7 @@ Function JsonTokenGetPrimType&(j As Json, idx As Long)
     JsonTokenGetPrimType& = t.primType
 End Function
 
-Function JsonGetEmptyToken&(j As Json)
+Function ___JsonGetEmptyToken&(j As Json)
     Dim b As JsonTokenBlock, t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
@@ -221,11 +221,11 @@ Function JsonGetEmptyToken&(j As Json)
 
     ___JsonPutToken j, res&, t
 
-    JsonGetEmptyToken& = res&
+    ___JsonGetEmptyToken& = res&
 End Function
 
 ' FIXME: Mark all child tokens as well recursively
-Sub JsonMarkEmptyToken(j As Json, idx As Long)
+Sub JsonTokenFree(j As Json, idx As Long)
     Dim b As JsonTokenBlock, t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Sub
@@ -238,6 +238,10 @@ Sub JsonMarkEmptyToken(j As Json, idx As Long)
     ___JsonPutToken j, idx, t
 
     j.NextFree = idx
+End Sub
+
+Sub JsonTokenFreeShallow(j As Json, idx As Long)
+    JsonTokenFree j, idx
 End Sub
 
 Sub ___JsonGetToken(j As Json, idx As Long, t As jsontok)
@@ -342,7 +346,7 @@ End Sub
 
 Function ___JsonTokenCreatePrim&(j As Json, s As String, primTyp As _Byte)
     Dim idx As Long, t As jsontok
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
 
@@ -367,7 +371,7 @@ Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
     Dim idx As Long, t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
 
@@ -383,7 +387,7 @@ Function JsonTokenCreateInteger&(j As Json, i As _Integer64)
     Dim idx As Long, t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
 
@@ -399,7 +403,7 @@ Function JsonTokenCreateNumber&(j As Json, intPart As _Integer64, fracPart As Do
     Dim idx As Long, t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
 
@@ -417,7 +421,7 @@ Function JsonTokenCreateDouble&(j As Json, s As Double)
     Dim idx As Long, t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
 
@@ -437,7 +441,7 @@ Function JsonTokenCreateNull&(j As Json)
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
 
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
 
@@ -454,7 +458,7 @@ Function JsonTokenCreateKey&(j As Json, k As String, inner As Long)
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
 
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
 
@@ -475,7 +479,7 @@ Function JsonTokenCreateArray&(j As Json)
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
 
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
 
@@ -501,7 +505,7 @@ Function JsonTokenCreateObject&(j As Json)
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
 
-    idx = JsonGetEmptyToken&(j)
+    idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
     t.typ = JSONTOK_TYPE_OBJECT
@@ -525,22 +529,6 @@ Sub JsonSetRootToken(j As json, idx As Long)
     If Not ___JsonIsInitialized&(j) Then Exit Function
 
     j.RootToken = idx
-End Sub
-
-' ' FIXME: PRIVATE
-Sub PrintTokens(j As json, index As Long, indent As Long)
-    Dim t As jsontok
-    ___JsonGetToken j, index, t
-
-    Print Space$(indent); "Token"; index; " type: "; ___JsonTokenTypeString$(t.typ); ", value: "
-
-    Dim i As _Offset, max As _Offset
-    max = ___JsonTokenGetChildCount%&(t)
-
-    while i < max
-        PrintTokens j, ___JsonTokenGetChild(t, i), indent + 2
-        i = i + 1
-    Wend
 End Sub
 
 Type ___JsonFmtState
@@ -810,31 +798,10 @@ Function ___JsonTokenPrimTypeString$(primType As _Byte)
 End Function
 
 ' FIXME: 'PRIVATE'
-Function IsAlpha&(chr As Long)
-    IsAlpha& = (chr >= Asc("a") And chr <= Asc("z")) Or (chr >= Asc("A") And chr <= Asc("Z"))
+Function ___JsonIsDigit&(chr As Long)
+    ___JsonIsDigit& = chr >= Asc("0") And chr <= Asc("9")
 End Function
 
-' FIXME: 'PRIVATE'
-Function IsDigit&(chr As Long)
-    IsDigit& = chr >= Asc("0") And chr <= Asc("9")
-End Function
-
-' FIXME: 'PRIVATE'
-Function FindEndingWhitespace~&(json As String, index As _Unsigned Long)
-    Dim newIdx As _Unsigned Long
-    For newIdx = index To Len(json)
-        Dim a As Long
-        a = Asc(json, newIdx)
-        If Not (IsAlpha&(a) Or IsDigit&(a)) Then
-            FindEndingWhitespace~& = newIdx
-            Exit Function
-        End If
-    Next
-
-    FindEndingWhitespace~& = 0
-End Function
-
-' FIXME: PRIVATE
 Sub ___JsonSetError(ero As Long, txt As String)
     JsonHadError = ero
     JsonError = txt
@@ -904,7 +871,7 @@ Function ___JsonLexNumber&(json As String, lexer As ___JsonLexer)
     If Asc(json, curIdx) = Asc("-") Then curIdx = curIdx + 1: isNegative = -1
 
     ' Make sure there's a digit after the minus sign
-    If Not IsDigit(Asc(json, curIdx)) Then
+    If Not ___JsonIsDigit(Asc(json, curIdx)) Then
         ___JsonSetError JSON_ERR_Invalid, "Expected digit at" + Str$(curIdx)
         ___JsonLexNumber& = ___JSON_LEX_End
         Exit Function
@@ -912,7 +879,7 @@ Function ___JsonLexNumber&(json As String, lexer As ___JsonLexer)
 
     ' Skip all digits in the integer part
     valStart = curIdx
-    While IsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
+    While ___JsonIsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
 
     lexer.intPart = Val(Mid$(json, valStart, curIdx - valStart))
     if isNegative Then lexer.intPart = -lexer.intPart
@@ -922,14 +889,14 @@ Function ___JsonLexNumber&(json As String, lexer As ___JsonLexer)
         valStart = curIdx
         curIdx = curIdx + 1
 
-        If Not IsDigit(Asc(json, curIdx)) Then
+        If Not ___JsonIsDigit(Asc(json, curIdx)) Then
             ___JsonSetError JSON_ERR_Invalid, "Expected digit after decimal point at" + Str$(curIdx - 1)
             ___JsonLexNumber& = ___JSON_LEX_End
             Exit Function
         End If
 
         ' Skip all digits in the decimal part
-        While IsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
+        While ___JsonIsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
 
         ' The decimal point is included, so this produces a floating point value
         lexer.fracPart = Val(Mid$(json, valStart, curIdx - valStart))
@@ -944,7 +911,7 @@ Function ___JsonLexNumber&(json As String, lexer As ___JsonLexer)
         If Asc(json, curIdx) = Asc("+") Then curIdx = curIdx + 1
         If Asc(json, curIdx) = Asc("-") Then curIdx = curIdx + 1: isNegative = -1
 
-        If Not IsDigit(Asc(json, curIdx)) Then
+        If Not ___JsonIsDigit(Asc(json, curIdx)) Then
             ___JsonSetError JSON_ERR_Invalid, "Expected digit at" + Str$(curIdx)
             ___JsonLexNumber& = ___JSON_LEX_End
             Exit Function
@@ -952,7 +919,7 @@ Function ___JsonLexNumber&(json As String, lexer As ___JsonLexer)
 
         ' Skip all digits in the decimal part
         valStart = curIdx
-        While IsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
+        While ___JsonIsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
 
         lexer.expPart = Val(Mid$(json, valStart, curIdx - valStart))
         If isNegative Then lexer.expPart = -lexer.expPart
@@ -1009,7 +976,7 @@ Function ___JsonLex&(json As String, lexer As ___JsonLexer)
     If chr = 34 Then ___JsonLex& = ___JsonLexString&(json, lexer): Exit Function
     If chr = Asc("n") Then ___JsonLex& = ___JsonLexNull&(json, lexer): Exit Function
     If chr = Asc("t") Or chr = Asc("f") Then ___JsonLex& = ___JsonLexBool&(json, lexer): Exit Function
-    if IsDigit(chr) Or chr = Asc("-") Then ___JsonLex& = ___JsonLexNumber&(json, lexer): Exit Function
+    if ___JsonIsDigit(chr) Or chr = Asc("-") Then ___JsonLex& = ___JsonLexNumber&(json, lexer): Exit Function
 
     If chr = Asc(",") Then
         lexer.startIdx = lexer.nextIdx: lexer.endIdx = lexer.nextIdx: lexer.nextIdx = lexer.nextIdx + 1

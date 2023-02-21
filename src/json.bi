@@ -215,11 +215,6 @@ Declare Function JsonQueryFromValue$(j As Json, startToken As Long, query As Str
 ' 8 gives 256 tokens allocated at a time.
 Const JSON_BLOCK_SHIFT = 8
 
-' Allocates a new token for you and returns its index. The token itself is
-' empty and has the type JSONTOK_TYPE_FREE. Typically you should not use this
-' directly and use the JsonTokenCreate*() functions instead.
-Declare Function JsonTokenAllocate&(j As Json)
-
 ' Tells the Json object that the token at the given index is no longer used and
 ' its memory can be reused or free'd.
 '
