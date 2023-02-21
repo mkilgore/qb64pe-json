@@ -8,34 +8,34 @@ Dim j As Json
 JsonInit j
 
 
-For i = 1 to 1024
-    Print "Idx:"; i; ", free: "; JsonGetEmptyToken&(j)
-Next
-
-For i = 400 To 800 Step 4
-    Print "Mark: "; i; i + 3
-    JsonMarkEmptyToken j, i
-    JsonMarkEmptyToken j, i + 3
-Next
-
-For i = 800 To 400 Step -4
-    Print "Mark: "; i + 1; i + 2
-    JsonMarkEmptyToken j, i + 1
-    JsonMarkEmptyToken j, i + 2
-Next
-
-count = 0
-For i = 400 To 803
-    res = JsonGetEmptyToken&(j)
-    Print "free: "; res;
-    if res < 805 Then count = count + 1
-Next
-
-Print
-Print "Count:"; count
-Print "next: "; JsonGetEmptyToken&(j)
-Print "next: "; JsonGetEmptyToken&(j)
-Print "next: "; JsonGetEmptyToken&(j)
+' For i = 1 to 1024
+'     Print "Idx:"; i; ", free: "; JsonGetEmptyToken&(j)
+' Next
+' 
+' For i = 400 To 800 Step 4
+'     'Print "Mark: "; i; i + 3
+'     JsonMarkEmptyToken j, i
+'     JsonMarkEmptyToken j, i + 3
+' Next
+' 
+' For i = 800 To 400 Step -4
+'     'Print "Mark: "; i + 1; i + 2
+'     JsonMarkEmptyToken j, i + 1
+'     JsonMarkEmptyToken j, i + 2
+' Next
+' 
+' count = 0
+' For i = 400 To 803
+'     res = JsonGetEmptyToken&(j)
+'     ' Print "free: "; res;
+'     if res < 805 Then count = count + 1
+' Next
+' 
+' Print
+' Print "Count:"; count
+' Print "next: "; JsonGetEmptyToken&(j)
+' Print "next: "; JsonGetEmptyToken&(j)
+' Print "next: "; JsonGetEmptyToken&(j)
 
 JsonClear j
 
@@ -51,9 +51,10 @@ ret = JsonParse&(json, j)
 
 Print "Original json: "; json
 Print "Return: "; ret
+Print "Error:"; JsonHadError; ", str: "; JsonError
 Print
 
-PrintTokens json, j, 1, 0
+PrintTokens j, 0, 0
 
 JsonClear j
 
@@ -95,3 +96,7 @@ Sub foo(a)
 End Sub
 
 '$include:'../../src/json.bm'
+'
+Function AddQuotes$ (s As String)
+    AddQuotes$ = Chr$(34) + s + Chr$(34)
+End Function

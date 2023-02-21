@@ -1,0 +1,58 @@
+double:-200000.5 , intpart:-200000 , fracPart: .5 
+JsonString: {
+  "key1": 5000,
+  "key2": 5000,
+  "inKey1": {
+    "inKey1": {
+      "key1": 50,
+      "key2": 100,
+      "key3": -200000.5
+    },
+    "inKey2": [
+      20,
+      "foobar\"\"",
+      "foobar\"\""
+    ]
+  }
+}
+Starting loop...
+Token: LeftBrace, start: 1 , end: 1 
+Token: String, start: 6 , end: 9 
+Token: Colon, start: 11 , end: 11 
+Token: Number, start: 13 , end: 16 
+Token: Comma, start: 17 , end: 17 
+Token: String, start: 22 , end: 25 
+Token: Colon, start: 27 , end: 27 
+Token: Number, start: 29 , end: 32 
+Token: Comma, start: 33 , end: 33 
+Token: String, start: 38 , end: 43 
+Token: Colon, start: 45 , end: 45 
+Token: LeftBrace, start: 47 , end: 47 
+Token: String, start: 54 , end: 59 
+Token: Colon, start: 61 , end: 61 
+Token: LeftBrace, start: 63 , end: 63 
+Token: String, start: 72 , end: 75 
+Token: Colon, start: 77 , end: 77 
+Token: Number, start: 79 , end: 80 
+Token: Comma, start: 81 , end: 81 
+Token: String, start: 90 , end: 93 
+Token: Colon, start: 95 , end: 95 
+Token: Number, start: 97 , end: 99 
+Token: Comma, start: 100 , end: 100 
+Token: String, start: 109 , end: 112 
+Token: Colon, start: 114 , end: 114 
+Token: Number, start: 116 , end: 124 
+Token: RightBrace, start: 130 , end: 130 
+Token: Comma, start: 131 , end: 131 
+Token: String, start: 138 , end: 143 
+Token: Colon, start: 145 , end: 145 
+Token: LeftBracket, start: 147 , end: 147 
+Token: Number, start: 155 , end: 156 
+Token: Comma, start: 157 , end: 157 
+Token: String, start: 166 , end: 175 
+Token: Comma, start: 177 , end: 177 
+Token: String, start: 186 , end: 195 
+Token: RightBracket, start: 202 , end: 202 
+Token: RightBrace, start: 206 , end: 206 
+Token: RightBrace, start: 208 , end: 208 
+Token: End, start: 208 , end: 208 

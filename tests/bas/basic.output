@@ -1,1 +1,22 @@
-Hi
+Original json: {"key1":true, "key2": 20       , "foo": [ 20, 30, 40 ]}
+Return:  0 
+Error: 0 , str: 
+
+Token 0  type: Object, value: 
+  Token 2  type: Key, value: 
+    Token 1  type: Value, value: 
+  Token 4  type: Key, value: 
+    Token 3  type: Value, value: 
+  Token 9  type: Key, value: 
+    Token 5  type: Array, value: 
+      Token 6  type: Value, value: 
+      Token 7  type: Value, value: 
+      Token 8  type: Value, value: 
+Created JSON: {
+  "key1": [
+    "This is a string!",
+    true,
+    5000100
+  ],
+  "key2": "another string"
+}
