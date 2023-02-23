@@ -54,7 +54,7 @@ Print "Return: "; ret
 Print "Error:"; JsonHadError; ", str: "; JsonError
 Print
 
-PrintTokens j, 0, 0
+' PrintTokens j, 0, 0
 
 JsonClear j
 

@@ -6,13 +6,19 @@ Rendered Json: {
   "inKey1": {
     "inKey1": {
       "key1": 50,
-      "key2": 50,
-      "key3": 50
+      "key2": 100,
+      "key3": 150
     },
     "inKey2": [
       20,
       "foobar",
-      "foobar"
+      40,
+      [
+        2000,
+        {
+          "key10": 5000
+        }
+      ]
     ]
   }
 }
@@ -25,3 +31,5 @@ Query Test 5 PASS!
 Query Test 6 PASS!
 Query Test 7 PASS!
 Query Test 8 PASS!
+Query Test 9 PASS!
+Query Test 10 PASS!
