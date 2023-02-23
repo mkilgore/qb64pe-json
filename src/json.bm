@@ -168,6 +168,12 @@ Function JsonTokenGetChild&(j As Json, idx As Long, childIdx As Long)
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
 
+    If childIdx < 0 Or childIdx >= JsonTokenTotalChildren&(j, idx) Then
+        ___JsonSetError JSON_ERR_OutOfRange, "Child index was out-of-bound of the array"
+        JsonTokenGetChild& = JSON_ERR_OutOfRange
+        Exit Function
+    End If
+
     ___JsonGetToken j, idx, t
 
     JsonTokenGetChild& = ___JsonTokenGetChild&(t, childIdx)
@@ -362,7 +368,7 @@ End Function
 
 Function JsonTokenCreateString&(j As Json, s As String)
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateString& = JSON_ERR_NotInitialized: Exit Function
 
     JsonTokenCreateString& = ___JsonTokenCreatePrim&(j, s, JSONTOK_PRIM_STRING)
 End Function
@@ -370,7 +376,7 @@ End Function
 Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateBoolean& = JSON_ERR_NotInitialized: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -386,7 +392,7 @@ End Function
 Function JsonTokenCreateInteger&(j As Json, i As _Integer64)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateInteger& = JSON_ERR_NotInitialized: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -402,7 +408,7 @@ End Function
 Function JsonTokenCreateNumber&(j As Json, intPart As _Integer64, fracPart As Double, expPart As _Integer64)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateNumber& = JSON_ERR_NotInitialized: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -420,7 +426,7 @@ End Function
 Function JsonTokenCreateDouble&(j As Json, s As Double)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateDouble& = JSON_ERR_NotInitialized: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -439,7 +445,7 @@ End Function
 Function JsonTokenCreateNull&(j As Json)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateNull& = JSON_ERR_NotInitialized: Exit Function
 
     idx = ___JsonGetEmptyToken&(j)
 
@@ -456,7 +462,7 @@ End Function
 Function JsonTokenCreateKey&(j As Json, k As String, inner As Long)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateKey& = JSON_ERR_NotInitialized: Exit Function
 
     idx = ___JsonGetEmptyToken&(j)
 
@@ -477,7 +483,7 @@ End Function
 Function JsonTokenCreateArray&(j As Json)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateArray& = JSON_ERR_NotInitialized: Exit Function
 
     idx = ___JsonGetEmptyToken&(j)
 
@@ -493,17 +499,25 @@ End Function
 Sub JsonTokenArrayAdd(j As Json, arrayIdx As Long, childidx As Long)
     Dim t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then Exit Sub
 
     ___JsonGetToken j, arrayIdx, t
     ___JsonTokenAddChild t, childidx
     ___JsonPutToken j, arrayIdx, t
 End Sub
 
+Sub JsonTokenArrayAddAll(j As Json, arrayIdx As Long, childidx() As Long)
+    Dim i As Long
+    For i = LBOUND(childidx) To UBOUND(childidx)
+        JsonTokenArrayAdd j, arrayIdx, childidx(i)
+        If JsonHadError Then Exit Sub
+    Next
+End Sub
+
 Function JsonTokenCreateObject&(j As Json)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateObject& = JSON_ERR_NotInitialized: Exit Function
 
     idx = ___JsonGetEmptyToken&(j)
 
@@ -517,16 +531,24 @@ End Function
 Sub JsonTokenObjectAdd(j As Json, objectIdx As Long, childidx As Long)
     Dim t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then Exit Sub
 
     ___JsonGetToken j, objectIdx, t
     ___JsonTokenAddChild t, childidx
     ___JsonPutToken j, objectIdx, t
 End Sub
 
+Sub JsonTokenObjectAddAll(j As Json, objectIdx As Long, childidx() As Long)
+    Dim i As Long
+    For i = LBOUND(childidx) To UBOUND(childidx)
+        JsonTokenObjectAdd j, objectIdx, childidx(i)
+        If JsonHadError Then Exit Sub
+    Next
+End Sub
+
 Sub JsonSetRootToken(j As json, idx As Long)
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then Exit Sub
 
     j.RootToken = idx
 End Sub
@@ -697,60 +719,169 @@ Function JsonTokenGetValueDouble#(j As Json, idx As Long)
     JsonTokenGetValueDouble# = t.intPart + t.fracPart
 End Function
 
-' Returns the token index that the query refers too
+Type ___JsonQLex
+    curIdx As Long
+
+    index As Long
+    keyName As String
+End Type
+
+Function ___JsonQueryLex&(query As String, lex As ___JsonQLex)
+    Dim startIdx As Long
+
+    If lex.curIdx > Len(query) Then
+        ___JsonQueryLex& = ___JSON_QLEX_End
+        Exit Function
+    End If
+
+    If Asc(query, lex.curIdx) = Asc(".") Then
+        ___JsonQueryLex& = ___JSON_QLEX_Dot
+        lex.curIdx = lex.curIdx + 1
+        Exit Function
+    End If
+
+    If Asc(query, lex.curIdx) = Asc("(") Then
+
+        lex.curIdx = lex.curIdx + 1
+        startIdx = lex.curIdx
+
+        While ___JsonIsDigit(Asc(query, lex.curIdx)): lex.curIdx = lex.curIdx + 1: Wend
+
+        If Asc(query, lex.curIdx) <> Asc(")") Then
+            ___JsonSetError JSON_ERR_BADQUERY, "Expected ')' at position:" + Str$(lex.curIdx)
+            Exit Function
+        End If
+
+        lex.index = Val(Mid$(query, startIdx, lex.curIdx - startIdx))
+        ___JsonQueryLex& = ___JSON_QLEX_Index
+        lex.curIdx = lex.curIdx + 1
+        Exit Function
+    End If
+
+    If Asc(query, lex.curIdx) = Asc("'") Then
+        Dim keyName As String
+
+        Do While Asc(query, lex.curIdx) <> Asc("'") Or lex.curIdx > Len(query)
+            If Asc(query, lex.curIdx) = Asc("\") Then
+                lex.curIdx = lex.curIdx + 1
+                If lex.curIdx > Len(query) Then Exit Do
+
+                If Asc(query, lex.curIdx) <> Asc("'") Then
+                    ___JsonSetError JSON_ERR_BADQUERY, "Unexpected escape character at postion:" + Str$(lex.curIdx)
+                    Exit Function
+                End If
+
+                keyName = keyName + "'"
+            Else
+                keyName = keyName + Chr$(Asc(query, lex.curIdx))
+            End If
+
+            lex.curIdx = lex.curIdx + 1
+        Loop
+
+        If lex.curIdx > Len(query) Then
+            ___JsonSetError JSON_ERR_BADQUERY, "Missing ending ' quote at position:" + Str$(lex.curIdx)
+            Exit Function
+        End If
+
+        lex.keyName = keyName
+        ___JsonQueryLex& = ___JSON_QLEX_Key
+        Exit Function
+    End If
+
+    ' unquoted key name
+    startIdx = lex.curIdx
+    Do While lex.curIdx <= Len(query)
+        If Asc(query, lex.curIdx) = Asc(".") Or Asc(query, lex.curIdx) = Asc("(") Then Exit Do
+
+        lex.curIdx = lex.curIdx + 1
+    Loop
+
+    lex.keyName = Mid$(query, startIdx, lex.curIdx - startIdx)
+    ___JsonQueryLex& = ___JSON_QLEX_Key
+End Function
+
 Function JsonQueryFromToken&(j As Json, startToken As Long, query As String)
-    Dim t As Long, tok As jsontok
+    Dim lex As ___JsonQLex, curTok As Long, first As Long
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
 
-    t = startToken
+    lex.curIdx = 1
+    curTok = startToken
+    first = -1
 
-    While Len(query)
-        Dim colon As Long, k As String, child As long
-        colon = InStr(query, ":")
+    Dim tok As Long
+    tok = ___JsonQueryLex&(query, lex)
+    Do
+        ' Array tokens can come one after another
+        While tok = ___JSON_QLEX_Index
+             If JsonTokenGetType&(j, curTok) <> JSONTOK_TYPE_ARRAY Then
+                 ___JsonSetError JSON_ERR_BADQUERY, "Array bounds were used on a non-array token, at position:" + Str$(lex.curIdx)
+                 JsonQueryFromToken& = JSON_ERR_BADQUERY
+                 Exit Function
+             End If
 
-        If colon Then
-            k = Mid$(query, 1, colon - 1)
-            query = Mid$(query, colon + 1)
-        Else
-            k = query
-            query = ""
+             curTok = JsonTokenGetChild&(j, curTok, lex.index)
+             If JsonHadError Then JsonQueryFromToken& = JsonHadError: Exit FUnction
+             tok = ___JsonQueryLex&(query, lex)
+             first = 0
+        Wend
+
+        If tok = ___JSON_QLEX_End Then Exit Do
+
+        ' Dot must separate array/key
+        If Not first Then
+            If tok <> ___JSON_QLEX_Dot Then
+                 ___JsonSetError JSON_ERR_BADQUERY, "Expected dot after array index, at position:" + Str$(lex.curIdx)
+                 JsonQueryFromToken& = JSON_ERR_BADQUERY
+                 Exit Function
+            End If
+
+            ' Token after dot must be a key, not array
+            tok = ___JsonQueryLex&(query, lex)
+            If tok <> ___JSON_QLEX_Key Then
+                 ___JsonSetError JSON_ERR_BADQUERY, "Expected key name after dot, at position:" + Str$(lex.curIdx)
+                 JsonQueryFromToken& = JSON_ERR_BADQUERY
+                 Exit Function
+            End If
         End If
+        first = 0
 
-        ' Array index
-        If Asc(k, 1) = Asc("[") Then
-            If Asc(k, Len(k)) <> Asc("]") Then ___JsonSetError JSON_ERR_BADQUERY, "Missing closing ]" : Exit Function
-            Dim arrayIndex As Long
-            arrayIndex = Val(Mid$(k, 2, Len(k) - 2))
-
-            If arrayIndex < 0 Or arrayIndex >= JsonTokenTotalChildren&(j, t) Then ___JsonSetError JSON_ERR_OUTOFRANGE, "Array index out of range": Exit Function
-
-            ' This is either a value, or an object inside the array
-            t = JsonTokenGetChild&(j, t, arrayIndex)
-        Else
+        ' Key's cannot follow each other, they need to either be separated by a dot, or edn with an array index
+        While tok = ___JSON_QLEX_Key
             Dim found As Long
-            found = 0
+            found = -1
 
-            For child = 0 To JsonTokenTotalChildren&(j, t) - 1
+            For child = 0 To JsonTokenTotalChildren&(j, curTok) - 1
                 Dim c As Long, typ As Long
-                c = JsonTokenGetChild&(j, t, child)
-                ___JsonGetToken j, c, tok
+                c = JsonTokenGetChild&(j, curTok, child)
 
-                If tok.typ <> JSONTOK_TYPE_KEY Then _Continue
+                If JsonTokenGetType&(j, c) <> JSONTOK_TYPE_KEY Then _Continue
 
-                If ___JsonGetRawStrValue$(j, tok) = k Then
+                If JsonTokenGetValueStr$(j, c) = lex.keyName Then
                     found = JsonTokenGetChild&(j, c, 0) ' Get the child of the key node
                     Exit For
                 End If
             Next
 
-            If found = 0 Then ___JsonSetError JSON_ERR_KEYNOTFOUND, "Key " + ___JsonAddQuotes$(k) + " not found!": Exit Function
+            If found = -1 Then
+                ___JsonSetError JSON_ERR_KEYNOTFOUND, "Key " + ___JsonAddQuotes$(lex.keyName) + " not found!"
+                JsonQueryFromToken& = JSON_ERR_KeyNotFound
+                Exit Function
+            End If
 
-            t = found
-        End If
-    Wend
+            curTok = found
 
-    JsonQueryFromToken& = t
+            tok = ___JsonQueryLex&(query, lex)
+            If tok = ___JSON_QLEX_Key Then
+                 ___JsonSetError JSON_ERR_BADQUERY, "Unexpected key, at position:" + Str$(lex.curIdx)
+                 JsonQueryFromToken& = JSON_ERR_BADQUERY
+                 Exit Function
+            End If
+        Wend
+    Loop
+
+    JsonQueryFromToken& = curTok
 End Function
 
 Function JsonQueryToken&(j As Json, query As String)
@@ -1018,37 +1149,37 @@ Function ___JsonLex&(json As String, lexer As ___JsonLexer)
     ___JsonLex& = ___JSON_LEX_End
 End Function
 
-Function ___JsonParse2Value&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
+Function ___JsonParseValue&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
     Dim currentToken As Long, t As jsontok
 
     Select Case curTok
         Case ___JSON_LEX_LeftBrace:
-            ___JsonParse2Value& = ___JsonParse2Object(json, j, lexer, curTok)
+            ___JsonParseValue& = ___JsonParseObject(json, j, lexer, curTok)
 
         Case ___JSON_LEX_LeftBracket:
-            ___JsonParse2Value& = ___JsonParse2Array(json, j, lexer, curTok)
+            ___JsonParseValue& = ___JsonParseArray(json, j, lexer, curTok)
 
         Case ___JSON_LEX_Null:
-            ___JsonParse2Value& = JsonTokenCreateNull&(j)
+            ___JsonParseValue& = JsonTokenCreateNull&(j)
 
         Case ___JSON_LEX_Number:
-            ___JsonParse2Value& = JsonTokenCreateNumber&(j, t.intPart, t.fracPart, t.expPart)
+            ___JsonParseValue& = JsonTokenCreateNumber&(j, t.intPart, t.fracPart, t.expPart)
 
         Case ___JSON_LEX_Bool:
-            ___JsonParse2Value& = JsonTokenCreateBoolean&(j, t.intPart)
+            ___JsonParseValue& = JsonTokenCreateBoolean&(j, t.intPart)
 
         Case ___JSON_LEX_String:
-            ___JsonParse2Value& = JsonTokenCreateString&(j, ___JsonUnescapeString$(Mid$(json, lexer.startIdx, lexer.endIdx)))
+            ___JsonParseValue& = JsonTokenCreateString&(j, ___JsonUnescapeString$(Mid$(json, lexer.startIdx, lexer.endIdx)))
 
         Case Else:
             ___JsonSetError JSON_ERR_Invalid, "Unexpected token at position" + Str$(lexer.startIdx)
-            ___JsonParse2Value& = JSON_ERR_Invalid
+            ___JsonParseValue& = JSON_ERR_Invalid
     End Select
 End Function
 
-Function ___JsonParse2Object&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
+Function ___JsonParseObject&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
     Dim objToken As Long, t As jsontok, first As Long
-    If curTok <> ___JSON_LEX_LeftBrace Then ___JsonParse2Object& = JSON_ERR_Invalid: Exit Function
+    If curTok <> ___JSON_LEX_LeftBrace Then ___JsonParseObject& = JSON_ERR_Invalid: Exit Function
 
     objToken = JsonTokenCreateObject&(j)
     first = -1
@@ -1066,7 +1197,7 @@ Function ___JsonParse2Object&(json As String, j As Json, lexer As ___JsonLexer, 
 
         If curTok <> ___JSON_LEX_String Then
             ___JsonSetError JSON_ERR_Invalid, "Expected key name at position:" + Str$(lexer.startIdx)
-             ___JsonParse2Object& = JSON_ERR_Invalid
+             ___JsonParseObject& = JSON_ERR_Invalid
             Exit Function
         End If
 
@@ -1077,19 +1208,19 @@ Function ___JsonParse2Object&(json As String, j As Json, lexer As ___JsonLexer, 
         curTok = ___JsonLex&(json, lexer)
         If curTok <> ___JSON_LEX_Colon Then
             ___JsonSetError JSON_ERR_Invalid, "Expected colon at position:" + Str$(lexer.startIdx)
-             ___JsonParse2Object& = JSON_ERR_Invalid
+             ___JsonParseObject& = JSON_ERR_Invalid
             Exit Function
         End If
 
         curTok = ___JsonLex&(json, lexer)
-        valueToken = ___JsonParse2Value&(json, j, lexer, curTok)
-        If valueToken = JSON_ERR_Invalid Then ___JsonParse2Object& = JSON_ERR_Invalid: Exit Function
+        valueToken = ___JsonParseValue&(json, j, lexer, curTok)
+        If valueToken = JSON_ERR_Invalid Then ___JsonParseObject& = JSON_ERR_Invalid: Exit Function
 
         keyToken = JsonTokenCreateKey&(j, keyName, valueToken)
         JsonTokenObjectAdd j, objToken, keyToken
     Loop
 
-    ___JsonParse2Object& = objToken
+    ___JsonParseObject& = objToken
 End Function
 
 ' FIXME: Unneeded?
@@ -1136,9 +1267,9 @@ Function lexTokStr$(lex As Long)
     End Select
 End Function
 
-Function ___JsonParse2Array&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
+Function ___JsonParseArray&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
     Dim arrToken As Long, t As jsontok, first As Long
-    If curTok <> ___JSON_LEX_LeftBracket Then ___JsonParse2Array& = JSON_ERR_Invalid: Exit Function
+    If curTok <> ___JSON_LEX_LeftBracket Then ___JsonParseArray& = JSON_ERR_Invalid: Exit Function
 
     arrToken = JsonTokenCreateArray&(j)
 
@@ -1150,7 +1281,7 @@ Function ___JsonParse2Array&(json As String, j As Json, lexer As ___JsonLexer, c
         If Not first Then
             If curTok <> ___JSON_LEX_Comma Then
                 ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position:" + Str$(lexer.startIdx)
-                ___JsonParse2Array& = JSON_ERR_Invalid
+                ___JsonParseArray& = JSON_ERR_Invalid
                 Exit Function
             End If
             curTok = ___JsonLex&(json, lexer)
@@ -1158,13 +1289,13 @@ Function ___JsonParse2Array&(json As String, j As Json, lexer As ___JsonLexer, c
         first = 0
 
         Dim valueToken As Long
-        valueToken = ___JsonParse2Value&(json, j, lexer, curTok)
-        if valueToken = JSON_ERR_Invalid Then ___JsonParse2Array& = JSON_ERR_Invalid: Exit Function
+        valueToken = ___JsonParseValue&(json, j, lexer, curTok)
+        if valueToken = JSON_ERR_Invalid Then ___JsonParseArray& = JSON_ERR_Invalid: Exit Function
 
         JsonTokenArrayAdd j, arrToken, valueToken
     Loop
 
-    ___JsonParse2Array& = arrToken
+    ___JsonParseArray& = arrToken
 End Function
 
 Function JsonParse&(json As String, j As Json)
@@ -1174,15 +1305,15 @@ Function JsonParse&(json As String, j As Json)
     lexer.nextIdx = 1
 
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonParse2& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonParse& = JSON_ERR_NotInitialized: Exit Function
 
     curTok = ___JsonLex&(json, lexer)
-    result = ___JsonParse2Value&(json, j, lexer, curTok)
+    result = ___JsonParseValue&(json, j, lexer, curTok)
 
-    If result = JSON_ERR_Invalid Then JsonParse2& = JsonHadError: Exit Function
+    If result = JSON_ERR_Invalid Then JsonParse& = JsonHadError: Exit Function
 
     JsonSetRootToken j, result
-    JsonParse2& = result
+    JsonParse& = result
 End Function
 
 Function ___JsonAddQuotes$ (s As String)

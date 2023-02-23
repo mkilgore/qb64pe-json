@@ -247,3 +247,8 @@ Const ___JSON_LEX_RightBracket = 8
 Const ___JSON_LEX_Comma = 9
 Const ___JSON_LEX_Colon = 10
 Const ___JSON_LEX_End = 11
+
+Const ___JSON_QLEX_Key = 1
+Const ___JSON_QLEX_Index = 2
+Const ___JSON_QLEX_Dot = 3
+Const ___JSON_QLEX_End = 4
