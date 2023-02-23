@@ -1,4 +1,4 @@
-' Option _Explicit
+Option _Explicit
 $Console:Only
 
 '$include:'../../src/json.bi'

@@ -1,3 +1,4 @@
+Option _Explicit
 $Console:Only
 
 '$include:'../../src/json.bi'
@@ -48,23 +49,26 @@ escapeTests(12).Result = "\\n\\n"
 escapeTests(13).Orig = "foobar\\foo"
 escapeTests(13).Result = "foobar\\\\foo"
 
+Dim i As Long
 For i = 1 To UBOUND(escapeTests)
-    res$ = ___JsonEscapeString$(escapeTests(i).Orig)
+    Dim res As String
+
+    res = ___JsonEscapeString$(escapeTests(i).Orig)
     Print "Escape   Test"; i;
 
-    If res$ = escapeTests(i).Result Then
+    If res = escapeTests(i).Result Then
         Print "PASS!"
     Else
-        Print "FAIL, result: "; res$
+        Print "FAIL, result: "; res
     End If
 
-    res$ = ___JsonUnescapeString$(escapeTests(i).Result)
+    res = ___JsonUnescapeString$(escapeTests(i).Result)
     Print "Unescape Test"; i;
 
-    If res$ = escapeTests(i).Orig Then
+    If res = escapeTests(i).Orig Then
         Print "PASS!"
     Else
-        Print "FAIL, result: "; res$
+        Print "FAIL, result: "; res
     End If
 Next
 

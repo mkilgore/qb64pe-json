@@ -1,8 +1,12 @@
+Option _Explicit
 $Console:Only
 
 '$include:'../../src/json.bi'
 
 Dim j As Json
+Dim As Long innerValue1, innerValue2, innerValue3, innerKey1, innerKey2, innerKey3
+Dim As Long innerInnerObj, arr1, arr1v1, arr1v2, arr1v3,  innerObj
+Dim As Long innKey, value1, key1, value2, key2, Obj
 
 JsonInit j
 
@@ -38,7 +42,7 @@ innerObj& = JsonTokenCreateObject&(j)
 JsonTokenObjectAdd j, innerObj&, innerKey1&
 JsonTokenObjectAdd j, innerObj&, innerKey2&
 
-inKey& = JsonTokenCreateKey&(j, "inKey1", innerObj&)
+innKey& = JsonTokenCreateKey&(j, "inKey1", innerObj&)
 
 value1& = JsonTokenCreateInteger&(j, 5000)
 key1& = JsonTokenCreateKey&(j, "key1", value1&)
@@ -49,15 +53,16 @@ key2& = JsonTokenCreateKey&(j, "key2", value2&)
 Obj& = JsonTokenCreateObject&(j)
 JsonTokenObjectAdd j, Obj&, key1&
 JsonTokenObjectAdd j, Obj&, key2&
-JsonTokenObjectAdd j, Obj&, inKey&
+JsonTokenObjectAdd j, Obj&, innKey&
 
 JsonSetRootToken j, Obj&
 
-jsonStr$ = JsonRender$(j)
+Dim jsonStr As String
+jsonStr = JsonRender$(j)
 
-Print "JsonString: " + jsonStr$
+Print "JsonString: " + jsonStr
 
-Test jsonStr$
+Test jsonStr
 
 System
 
@@ -69,6 +74,7 @@ Sub Test(jsonStr$)
     JsonHadError = 0
     Print "Starting loop..."
 
+    Dim tok As Long, count As Long
     While tok <> ___JSON_LEX_End And Not JsonHadError And count < 100
         count = count + 1
         JsonHadError = 0

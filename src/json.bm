@@ -218,16 +218,17 @@ Function ___JsonGetEmptyToken&(j As Json)
         _MemPut j.TokenBlocks, j.TokenBlocks.OFFSET + (j.TotalBlocks - 1) * Len(b), b
     End If
 
-    res& = j.NextFree
+    Dim res As Long
+    res = j.NextFree
 
     ___JsonGetToken j, j.NextFree, t
 
     j.NextFree = t.ParentIdx
     t.ParentIdx = 0
 
-    ___JsonPutToken j, res&, t
+    ___JsonPutToken j, res, t
 
-    ___JsonGetEmptyToken& = res&
+    ___JsonGetEmptyToken& = res
 End Function
 
 ' FIXME: Mark all child tokens as well recursively
@@ -849,7 +850,7 @@ Function JsonQueryFromToken&(j As Json, startToken As Long, query As String)
 
         ' Key's cannot follow each other, they need to either be separated by a dot, or edn with an array index
         While tok = ___JSON_QLEX_Key
-            Dim found As Long
+            Dim found As Long, child As Long
             found = -1
 
             For child = 0 To JsonTokenTotalChildren&(j, curTok) - 1
@@ -980,14 +981,14 @@ Function ___JsonLexString&(json As String, lexer As ___JsonLexer)
         End If
     Wend
 
-    ___JsonSetError JSON_ERR_Invalid, "Missing end quote for string starting at position" + Str$(startIdx)
+    ___JsonSetError JSON_ERR_Invalid, "Missing end quote for string starting at position" + Str$(lexer.startIdx)
     ___JsonLexString& = ___JSON_LEX_End
 End Function
 
 Function ___JsonLexNull&(json As String, lexer As ___JsonLexer)
-    If Mid$(json, startIdx, 4) = "null" Then ___JsonLexNull& = ___JSON_LEX_Null: Exit Function
+    If Mid$(json, lexer.startIdx, 4) = "null" Then ___JsonLexNull& = ___JSON_LEX_Null: Exit Function
 
-    ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position" + Str$(startIdx + 1)
+    ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position" + Str$(lexer.startIdx + 1)
     ___JsonLexNull& = ___JSON_LEX_End
 End Function
 
@@ -1088,9 +1089,7 @@ Function ___JsonLexBool&(json As String, lexer As ___JsonLexer)
     ___JsonLexBool& = ___JSON_LEX_End
 End Function
 
-' Returns the next token starting at startIdx, skipping whitespace
-'
-' startIdx and endIdx are modified to be the bounds of the next token
+' Returns the next token starting at nextIdx, skipping whitespace
 Function ___JsonLex&(json As String, lexer As ___JsonLexer)
     If lexer.nextIdx > Len(json) Then ___JsonLex& = ___JSON_LEX_End: Exit Function
 

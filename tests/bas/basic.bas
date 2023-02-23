@@ -1,4 +1,4 @@
-' Option _Explicit
+Option _Explicit
 $Console:Only
 
 '$include:'../../src/json.bi'
@@ -44,7 +44,7 @@ JsonClear j
 
 JsonInit j
 
-Dim json As String
+Dim json As String, ret As Long
 json = "{" + AddQuotes$("key1") + ":true, " + AddQuotes$("key2") + ": 20       , " + AddQuotes$("foo") + ": [ 20, 30, 40 ]}"
 
 ret = JsonParse&(json, j)
@@ -59,6 +59,8 @@ Print
 JsonClear j
 
 JsonInit j
+
+Dim As Long s, b, flo, arr, k, k2, obj
 
 s& = JsonTokenCreateString&(j, "This is a string!")
 b& = JsonTokenCreateBoolean&(j, -1)

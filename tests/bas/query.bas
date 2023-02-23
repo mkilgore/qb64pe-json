@@ -1,3 +1,4 @@
+Option _Explicit
 $Console:Only
 
 '$include:'../../src/json.bi'
@@ -9,6 +10,9 @@ End Type
 
 Dim j As Json
 Dim innerValue(1 To 3) As long, innerKey(1 To 3) As Long
+Dim As Long innerInnerObj, innerKey1, arrInner, arrInner2
+Dim As Long arrInner2Value, arrInner2Key, arr1, innerKey2
+Dim As Long innerObj, innKey, value1, key1, value2, key2, Obj
 
 JsonInit j
 
@@ -51,7 +55,7 @@ innerObj& = JsonTokenCreateObject&(j)
 JsonTokenObjectAdd j, innerObj&, innerKey1&
 JsonTokenObjectAdd j, innerObj&, innerKey2&
 
-inKey& = JsonTokenCreateKey&(j, "inKey1", innerObj&)
+innKey& = JsonTokenCreateKey&(j, "inKey1", innerObj&)
 
 value1& = JsonTokenCreateInteger&(j, 5000)
 key1& = JsonTokenCreateKey&(j, "key1", value1&)
@@ -62,7 +66,7 @@ key2& = JsonTokenCreateKey&(j, "key2", value2&)
 Obj& = JsonTokenCreateObject&(j)
 JsonTokenObjectAdd j, Obj&, key1&
 JsonTokenObjectAdd j, Obj&, key2&
-JsonTokenObjectAdd j, Obj&, inKey&
+JsonTokenObjectAdd j, Obj&, innKey&
 
 JsonSetRootToken j, Obj&
 
@@ -104,14 +108,17 @@ Print
 Print "Rendered Json: "; JsonRender$(j)
 Print
 
+Dim i As Long
 For i = 1 To UBOUND(queryTests)
-    res& = JsonQueryFromToken&(j, j.RootToken, queryTests(i).Query)
+    Dim res As Long
+
+    res = JsonQueryFromToken&(j, j.RootToken, queryTests(i).Query)
     Print "Query Test"; i;
 
-    If res& = queryTests(i).Result Then
+    If res = queryTests(i).Result Then
         Print "PASS!"
     Else
-        Print "FAIL, result: "; res&; ", error: "; JsonError
+        Print "FAIL, result: "; res; ", error: "; JsonError
     End If
 Next
 
