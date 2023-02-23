@@ -1,0 +1,9 @@
+JsonTokenCreateBoolean: PASS!
+JsonTokenCreateInteger: PASS!
+JsonTokenCreateDouble: PASS!
+JsonTokenCreateNumber: PASS!
+JsonTokenCreateNull: PASS!
+JsonTokenCreateArray: PASS!
+JsonTokenCreateObject: PASS!
+JsonTokenCreateString: PASS!
+JsonTokenCreateKey: PASS!
