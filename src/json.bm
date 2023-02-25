@@ -645,7 +645,6 @@ End Function
 
 Function JsonRender$(j As json)
     Dim state As ___JsonFmtState
-    state.format.Indented = -1
 
     JsonRender$ = ___JsonRenderInternal$(j, j.RootToken, state)
 End Function
