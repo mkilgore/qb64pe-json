@@ -75,7 +75,7 @@ Sub Test(jsonStr$)
     Print "Starting loop..."
 
     Dim tok As Long, count As Long
-    While tok <> ___JSON_LEX_End And Not JsonHadError And count < 100
+    While tok <> ___JSON_LEX_End And JsonHadError = JSON_ERR_Success And count < 100
         count = count + 1
         JsonHadError = 0
         tok = ___JsonLex&(jsonStr$, lexer)
