@@ -437,8 +437,6 @@ Function JsonTokenCreateDouble&(j As Json, s As Double)
     t.intPart = FIX(s)
     t.fracPart = ABS(s) - ABS(t.intPart)
 
-    Print "double:"; s; ", intpart:"; t.intPart; ", fracPart:"; t.fracPart
-
     ___JsonPutToken j, idx, t
     JsonTokenCreateDouble& = idx
 End Function
@@ -553,6 +551,13 @@ Sub JsonSetRootToken(j As json, idx As Long)
 
     j.RootToken = idx
 End Sub
+
+Function JsonGetRootToken&(j As Json)
+    ___JsonResetError
+    If Not ___JsonIsInitialized&(j) Then JsonGetRootToken& = JSON_ERR_NotInitialized: Exit Function
+
+    JsonGetRootToken& = j.RootToken
+End Function
 
 Type ___JsonFmtState
     format As JsonFormat
@@ -680,11 +685,40 @@ Function JsonTokenGetValueStr$(j As json, idx As Long)
     Dim t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Function
-    If ___JsonIsRightPrimType&(j, idx, JSONTOK_PRIM_STRING) Then Exit Function
+
+    If JsonTokenGetType&(j, idx) <> JSONTOK_TYPE_VALUE And JsonTokenGetType&(j, idx) <> JSONTOK_TYPE_KEY Then
+        JsonHadError = JSON_ERR_TokenWrongType
+        JsonError = "Json Token was passed to function requiring type 'Key' Or 'Value' but is actually type: '" + ___JsonTokenTypeString$(JsonTokenGetType&(j, idx))
+        Exit Function
+    End If
 
     ___JsonGetToken j, idx, t
 
-    JsonTokenGetValueStr$ = ___JsonGetRawStrValue$(j, t)
+    If t.typ = JSONTOK_TYPE_KEY Then
+        JsonTokenGetValueStr$ = ___JsonGetRawStrValue$(j, t)
+    ElseIf t.typ = JSONTOK_TYPE_VALUE Then
+        Select Case t.primType
+            Case JSONTOK_PRIM_STRING:
+                JsonTokenGetValueStr$ = ___JsonGetRawStrValue$(j, t)
+
+            Case JSONTOK_PRIM_NUMBER:
+                If t.fracPart = 0 Then
+                    JsonTokenGetValueStr$ = _TRIM$(STR$(t.intPart))
+                Else
+                    JsonTokenGetValueStr$ = _TRIM$(STR$(JsonTokenGetValueDouble#(j, idx)))
+                End If
+
+            Case JSONTOK_PRIM_BOOL:
+                If t.intPart Then
+                    JsonTokenGetValueStr$ = "true"
+                Else
+                    JsonTokenGetValueStr$ = "false"
+                End If
+
+            Case JSONTOK_PRIM_NULL:
+                JsonTokenGetValueStr$ = "null"
+        End Select
+    End If
 End Function
 
 Function JsonTokenGetValueBool&(j As Json, idx As Long)
@@ -909,25 +943,23 @@ Function JsonQueryToken&(j As Json, query As String)
 End Function
 
 ' Returns the value of the token the query refers too
-Function JsonQueryFromValue$ (j As Json, startToken As Long, query As String)
-    Dim t As Long, tok As jsontok
+Function jsonqueryfromvalue$ (j As Json, startToken As Long, query As String)
+    Dim t As Long
     t = JsonQueryFromToken&(j, startToken, query)
 
     If JsonHadError Then Exit Function
 
-    ___JsonGetToken j, t, tok
-    JsonQueryFromValue$ = ___JsonGetRawStrValue$(j, tok)
+    jsonqueryfromvalue$ = JsonTokenGetValueStr$(j, t)
 End Function
 
 ' Returns the value of the token the query refers too
 Function JsonQueryValue$ (j As Json, query As String)
-    Dim t As Long, tok As jsontok
+    Dim t As Long
     t = JsonQueryToken&(j, query)
 
     If JsonHadError Then Exit Function
 
-    ___JsonGetToken j, t, tok
-    JsonQueryValue$ = ___JsonGetRawStrValue$(j, tok)
+    JsonQueryValue$ = JsonTokenGetValueStr$(j, t)
 End Function
 
 Function ___JsonTokenTypeString$(typ As _Byte)
@@ -948,7 +980,6 @@ Function ___JsonTokenPrimTypeString$(primType As _Byte)
     End Select
 End Function
 
-' FIXME: 'PRIVATE'
 Function ___JsonIsDigit&(chr As Long)
     ___JsonIsDigit& = chr >= Asc("0") And chr <= Asc("9")
 End Function
@@ -963,6 +994,7 @@ Function ___JsonIsWhiteSpace&(chr As _Byte)
 End Function
 
 Type ___JsonLexer
+    prevNextIdx As Long
     nextIdx As Long
 
     startIdx As Long
@@ -1000,14 +1032,18 @@ Function ___JsonLexString&(json As String, lexer As ___JsonLexer)
         End If
     Wend
 
-    ___JsonSetError JSON_ERR_Invalid, "Missing end quote for string starting at position" + Str$(lexer.startIdx)
+    ___JsonSetError JSON_ERR_Invalid, "Missing end quote for string starting at position" + Str$(lexer.nextIdx)
     ___JsonLexString& = ___JSON_LEX_End
 End Function
 
 Function ___JsonLexNull&(json As String, lexer As ___JsonLexer)
-    If Mid$(json, lexer.startIdx, 4) = "null" Then ___JsonLexNull& = ___JSON_LEX_Null: Exit Function
+    If Mid$(json, lexer.nextIdx, 4) = "null" Then
+        lexer.nextIdx = lexer.nextIdx + 4
+        ___JsonLexNull& = ___JSON_LEX_Null
+        Exit Function
+    End If
 
-    ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position" + Str$(lexer.startIdx + 1)
+    ___JsonSetError JSON_ERR_Invalid, "Expected 'null' at position" + Str$(lexer.nextIdx)
     ___JsonLexNull& = ___JSON_LEX_End
 End Function
 
@@ -1110,6 +1146,7 @@ End Function
 
 ' Returns the next token starting at nextIdx, skipping whitespace
 Function ___JsonLex&(json As String, lexer As ___JsonLexer)
+    lexer.prevNextIdx = lexer.nextIdx
     If lexer.nextIdx > Len(json) Then ___JsonLex& = ___JSON_LEX_End: Exit Function
 
     ' Skip to next non-whitespace character
@@ -1168,7 +1205,7 @@ Function ___JsonLex&(json As String, lexer As ___JsonLexer)
 End Function
 
 Function ___JsonParseValue&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
-    Dim currentToken As Long, t As jsontok
+    Dim currentToken As Long
 
     Select Case curTok
         Case ___JSON_LEX_LeftBrace:
@@ -1181,23 +1218,27 @@ Function ___JsonParseValue&(json As String, j As Json, lexer As ___JsonLexer, cu
             ___JsonParseValue& = JsonTokenCreateNull&(j)
 
         Case ___JSON_LEX_Number:
-            ___JsonParseValue& = JsonTokenCreateNumber&(j, t.intPart, t.fracPart, t.expPart)
+            ___JsonParseValue& = JsonTokenCreateNumber&(j, lexer.intPart, lexer.fracPart, lexer.expPart)
 
         Case ___JSON_LEX_Bool:
-            ___JsonParseValue& = JsonTokenCreateBoolean&(j, t.intPart)
+            ___JsonParseValue& = JsonTokenCreateBoolean&(j, lexer.intPart)
 
         Case ___JSON_LEX_String:
-            ___JsonParseValue& = JsonTokenCreateString&(j, ___JsonUnescapeString$(Mid$(json, lexer.startIdx, lexer.endIdx)))
+            ___JsonParseValue& = JsonTokenCreateString&(j, ___JsonUnescapeString$(Mid$(json, lexer.startIdx, lexer.endIdx - lexer.startIdx + 1)))
 
         Case Else:
-            ___JsonSetError JSON_ERR_Invalid, "Unexpected token at position" + Str$(lexer.startIdx)
+            If JsonHadError = JSON_ERR_Success Then ___JsonSetError JSON_ERR_Invalid, "Unexpected token at position" + Str$(lexer.startIdx)
             ___JsonParseValue& = JSON_ERR_Invalid
     End Select
 End Function
 
 Function ___JsonParseObject&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
     Dim objToken As Long, t As jsontok, first As Long
-    If curTok <> ___JSON_LEX_LeftBrace Then ___JsonParseObject& = JSON_ERR_Invalid: Exit Function
+    If curTok <> ___JSON_LEX_LeftBrace Then
+        If JsonHadError = JSON_ERR_Success Then ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position:" + Str$(lexer.startIdx)
+        ___JsonParseObject& = JSON_ERR_Invalid
+        Exit Function
+    End If
 
     objToken = JsonTokenCreateObject&(j)
     first = -1
@@ -1208,24 +1249,28 @@ Function ___JsonParseObject&(json As String, j As Json, lexer As ___JsonLexer, c
         If curTok = ___JSON_LEX_RightBrace Then Exit Do
 
         If Not first Then
-            If curTok <> ___JSON_LEX_Comma Then ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position:" + Str$(lexer.startIdx): Exit Function
+            If curTok <> ___JSON_LEX_Comma Then
+                If JsonHadError = JSON_ERR_Success Then ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position:" + Str$(lexer.startIdx)
+                ___JsonParseObject& = JSON_ERR_Invalid
+                Exit Function
+            End If
             curTok = ___JsonLex&(json, lexer)
         End If
         first = 0
 
         If curTok <> ___JSON_LEX_String Then
-            ___JsonSetError JSON_ERR_Invalid, "Expected key name at position:" + Str$(lexer.startIdx)
-             ___JsonParseObject& = JSON_ERR_Invalid
+            If JsonHadError = JSON_ERR_Success Then ___JsonSetError JSON_ERR_Invalid, "Expected key name at position:" + Str$(lexer.startIdx)
+            ___JsonParseObject& = JSON_ERR_Invalid
             Exit Function
         End If
 
         Dim keyToken As Long, k As jsontok, valueToken As Long
         Dim keyName As String
-        keyName = ___JsonUnescapeString$(Mid$(json, lexer.startIdx, lexer.endIdx))
+        keyName = ___JsonUnescapeString$(Mid$(json, lexer.startIdx, lexer.endIdx - lexer.startIdx + 1))
 
         curTok = ___JsonLex&(json, lexer)
         If curTok <> ___JSON_LEX_Colon Then
-            ___JsonSetError JSON_ERR_Invalid, "Expected colon at position:" + Str$(lexer.startIdx)
+            ___JsonSetError JSON_ERR_Invalid, "Expected colon at position:" + Str$(lexer.prevNextIdx)
              ___JsonParseObject& = JSON_ERR_Invalid
             Exit Function
         End If
@@ -1298,7 +1343,7 @@ Function ___JsonParseArray&(json As String, j As Json, lexer As ___JsonLexer, cu
 
         If Not first Then
             If curTok <> ___JSON_LEX_Comma Then
-                ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position:" + Str$(lexer.startIdx)
+                ___JsonSetError JSON_ERR_Invalid, "Expected comma at position:" + Str$(lexer.startIdx)
                 ___JsonParseArray& = JSON_ERR_Invalid
                 Exit Function
             End If
@@ -1317,9 +1362,7 @@ Function ___JsonParseArray&(json As String, j As Json, lexer As ___JsonLexer, cu
 End Function
 
 Function JsonParse&(json As String, j As Json)
-    ' Dim currentToken As Long, currentContainer As Long
-    ' Dim curTok As jsontok, curCont As jsontok, prevTok As jsontok, tmpTok As jsontok
-    Dim lexer As ___JsonLexer, curTok As Long, result As Long
+    Dim lexer As ___JsonLexer, curTok As Long, result As Long, lastPos As Long
     lexer.nextIdx = 1
 
     ___JsonResetError
@@ -1330,8 +1373,17 @@ Function JsonParse&(json As String, j As Json)
 
     If result = JSON_ERR_Invalid Then JsonParse& = JsonHadError: Exit Function
 
+    lastPos = lexer.nextIdx
+    curTok = ___JsonLex&(json, lexer)
+
+    If curTok <> ___JSON_LEX_End Then
+        ___JsonSetError JSON_ERR_Invalid, "Unexpected characters after end of JSON at position:" + Str$(lastPos)
+        JsonParse& = JSON_ERR_Invalid
+        Exit Function
+    End If
+
     JsonSetRootToken j, result
-    JsonParse& = result
+    JsonParse& = JSON_ERR_Success
 End Function
 
 Function ___JsonAddQuotes$ (s As String)

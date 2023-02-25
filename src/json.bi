@@ -55,7 +55,8 @@ Declare Sub      JsonClear(json As Json)
 
 ' Parses a JSON string into a json object. The json object should already be initialized.
 '
-' Return value indicates whether the parse was a success. JsonHadError can also be checked
+' Return value indicates whether the parse was a success (JSON_ERR_Success).
+' JsonHadError can also be checked
 Declare Function JsonParse&(j As Json, json As String)
 
 ' These functions create new Json tokens which can be used to create a new Json
@@ -90,6 +91,7 @@ Declare Sub      JsonTokenObjectAddAll(j As Json, objectIdx As Long, childIdxs()
 ' required, but allows you to use convience functions like JsonRender() and
 ' JsonQuery() rather than JsonRenderIndex() and JsonQueryFrom()
 Declare Sub      JsonSetRootToken(j As json, idx As Long)
+Declare Function JsonGetRootToken&(j As Json)
 
 ' Takes a Json object and "renders" the JSON string it represents.
 '
@@ -115,6 +117,9 @@ Declare Function JsonRenderIndexFormatted$(j As Json, idx As Long, format As Jso
 '
 ' To convert a token into a JSON string, use JsonRender$()
 Declare Function JsonTokenGetValueStr$(j As json, idx As Long)
+
+' These functions return the coresponding primitive's value in the normal QB64
+' type (rather than as a string)
 Declare Function JsonTokenGetValueBool&(j As Json, idx, As Long)
 Declare Function JsonTokenGetValueInteger&&(j As Json, idx As Long)
 Declare Function JsonTokenGetValueDouble#(j As Json, idx As Long)
@@ -132,7 +137,7 @@ Declare Function JsonTokenGetType&(j As Json, idx As Long)
 ' Only works if the token is a JSONTOK_TYPE_VALUE. Returns a JSONTOK_PRIM_* value
 Declare Function JsonTokenGetPrimType&(j As Json, idx As Long)
 
-' Takes a JSON query string and finds the JSON tokent that it refers too.
+' Takes a JSON query string and finds the JSON token that it refers too.
 '
 ' Queries take the form of key identifiers and array indexes, separated by
 ' periods. Key identifiers can be in single or double quotes. Array indexes are
@@ -194,7 +199,7 @@ Declare Function JsonTokenGetPrimType&(j As Json, idx As Long)
 '
 ' The regular JsonQuery& and JsonQueryFrom& return the token index of the query
 ' result. The `*Value$` versions are a convinence that return the string
-' representation of the queried token. JsonTokenGetStr() is used to get the
+' representation of the queried token. JsonTokenGetValueStr() is used to get the
 ' string value, so the Value$ versions will only return results for primitives
 ' and keys.
 Declare Function JsonQuery&(j As Json, query As String)
