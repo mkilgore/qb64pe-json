@@ -1,0 +1,51 @@
+Parse result: Success 0 
+
+Token 0 type: Array
+  Token 1 type: Array
+    Token 2 type: Value, value: "20"
+    Token 3 type: Value, value: "30"
+    Token 4 type: Value, value: "40"
+  Token 5 type: Value, value: "string1"
+  Token 6 type: Value, value: "string2"
+  Token 7 type: Array
+    Token 8 type: Value, value: "500"
+    Token 9 type: Value, value: "200"
+    Token 10 type: Value, value: "string3"
+  Token 11 type: Array
+    Token 12 type: Value, value: "string4"
+  Token 13 type: Array
+  Token 14 type: Array
+    Token 15 type: Array
+      Token 16 type: Array
+        Token 17 type: Array
+          Token 18 type: Array
+
+[
+  [
+    20,
+    30,
+    40
+  ],
+  "string1",
+  "string2",
+  [
+    500,
+    200,
+    "string3"
+  ],
+  [
+    "string4"
+  ],
+  [
+  ],
+  [
+    [
+      [
+        [
+          [
+          ]
+        ]
+      ]
+    ]
+  ]
+]

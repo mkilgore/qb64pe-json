@@ -1,0 +1,12 @@
+Parse result: Success 0 
+
+Token 0 type: Object
+  Token 2 type: Key, value: "key1"
+    Token 1 type: Value, value: "null"
+  Token 4 type: Key, value: "key2"
+    Token 3 type: Value, value: "null"
+
+{
+  "key1": null,
+  "key2": null
+}

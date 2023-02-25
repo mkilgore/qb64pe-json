@@ -1,7 +1,12 @@
-Parse result: Success -1 
+Parse result: Success 0 
 
-Token 1  ( 1 , 37 ), type: Object, value: "{ "key": "value1", "key2": "value2" }"
-  Token 2  ( 4 , 6 ), type: Key, value: "key"
-    Token 3  ( 11 , 16 ), type: Value, value: "value1"
-  Token 4  ( 21 , 24 ), type: Key, value: "key2"
-    Token 5  ( 29 , 34 ), type: Value, value: "value2"
+Token 0 type: Object
+  Token 2 type: Key, value: "key"
+    Token 1 type: Value, value: "value1"
+  Token 4 type: Key, value: "key2"
+    Token 3 type: Value, value: "value2"
+
+{
+  "key": "value1",
+  "key2": "value2"
+}
