@@ -104,8 +104,11 @@ queryTests(9).Result = arrInner&
 queryTests(10).Query = "inKey1.inKey2(3)(1).key10"
 queryTests(10).Result = arrInner2Value&
 
+Dim fmt As JsonFormat
+fmt.Indented = -1
+
 Print
-Print "Rendered Json: "; JsonRender$(j)
+Print "Rendered Json: "; JsonRenderFormatted$(j, fmt)
 Print
 
 Dim i As Long

@@ -29,7 +29,10 @@ Print
 PrintTokens j, j.RootToken, 0
 Print
 
-Print JsonRender$(j)
+Dim fmt As JsonFormat
+fmt.Indented = -1
+
+Print JsonRenderFormatted$(j, fmt)
 
 JsonClear j
 System

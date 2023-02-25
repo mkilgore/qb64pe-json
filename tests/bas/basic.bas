@@ -46,7 +46,10 @@ JsonTokenObjectAdd j, obj&, k2&
 
 JsonSetRootToken j, obj&
 
-Print "Created JSON: "; JsonRender$(j)
+Dim fmt As JsonFormat
+fmt.Indented = -1
+
+Print "Created JSON: "; JsonRenderFormatted$(j, fmt)
 
 JsonClear j
 

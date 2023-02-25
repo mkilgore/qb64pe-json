@@ -57,8 +57,10 @@ JsonTokenObjectAdd j, Obj&, innKey&
 
 JsonSetRootToken j, Obj&
 
-Dim jsonStr As String
-jsonStr = JsonRender$(j)
+Dim jsonStr As String, fmt As JsonFormat
+fmt.Indented = -1
+
+jsonStr = JsonRenderFormatted$(j, fmt)
 
 Print "JsonString: " + jsonStr
 
