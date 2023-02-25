@@ -31,14 +31,13 @@ Const JSONTOK_PRIM_NUMBER = 2
 Const JSONTOK_PRIM_BOOL = 3
 Const JSONTOK_PRIM_NULL = 4
 
-' !!! Do not touch any in the Json object directly !!!
+' !!! Do not touch anything in the Json object directly !!!
 ' Manipulate it using the provided Subs and Functions
 Type Json
     RootToken As Long
     TotalTokens As Long
     TotalBlocks As Long
 
-    ' Don't touch any of these
     NextFree As Long
     TokenBlocks As _Mem
     IsInitialized As Long
@@ -128,7 +127,7 @@ Declare Function JsonTokenGetValueDouble#(j As Json, idx As Long)
 Declare Function JsonTokenTotalChildren&(j As json, idx As Long)
 
 ' Returns the token for a paticular child of this Json token.
-' Children are numbered from zero
+' Children are numbered from _zero_
 Declare Function JsonTokenGetChild&(j As json, idx As Long, childIdx As Long)
 
 ' Returns a JSONTOK_TYPE_* value
@@ -183,18 +182,18 @@ Declare Function JsonTokenGetPrimType&(j As Json, idx As Long)
 '    Query: key1.key2.key3
 '    Result: The token for the array.
 '
-'    Query: key1.key2.key3(1)
+'    Query: key1.key2.key3(0)
 '    Result: The token for 30, the first element in the array.
 '
-'    Query: key1.key2.key3(6)
-'    Result: Error, the array start at index 1 so the last valid index is 5.
+'    Query: key1.key2.key3(5)
+'    Result: Error, the array start at index 0 so the last valid index is 5.
 '            Attempting to access an index outside the bounds of the array
 '            generates an error.
 '
-'    Query: key1.key2.key3(4).key4
+'    Query: key1.key2.key3(3).key4
 '    Result: The token for 50. More keys can be specified after an array index.
 '
-'    Query: key1.key2.key3(5)(2)
+'    Query: key1.key2.key3(4)(1)
 '    Result: The token for 200. Multiple array bounds can be used to query nested arrays.
 '
 ' The regular JsonQuery& and JsonQueryFrom& return the token index of the query
