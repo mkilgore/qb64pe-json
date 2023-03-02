@@ -404,7 +404,7 @@ End Function
 
 Function JsonTokenCreateString&(j As Json, s As String)
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateString& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateString& = JsonHadError: Exit Function
 
     JsonTokenCreateString& = ___JsonTokenCreatePrim&(j, s, JSONTOK_PRIM_STRING)
 End Function
@@ -412,7 +412,7 @@ End Function
 Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateBoolean& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateBoolean& = JsonHadError: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -428,7 +428,7 @@ End Function
 Function JsonTokenCreateInteger&(j As Json, i As _Integer64)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateInteger& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateInteger& = JsonHadError: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -444,7 +444,7 @@ End Function
 Function JsonTokenCreateNumber&(j As Json, intPart As _Integer64, fracPart As Double, expPart As _Integer64)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateNumber& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateNumber& = JsonHadError: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -462,7 +462,7 @@ End Function
 Function JsonTokenCreateDouble&(j As Json, s As Double)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateDouble& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateDouble& = JsonHadError: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -479,7 +479,7 @@ End Function
 Function JsonTokenCreateNull&(j As Json)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateNull& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateNull& = JsonHadError: Exit Function
 
     idx = ___JsonGetEmptyToken&(j)
 
@@ -518,7 +518,7 @@ End Function
 Function JsonTokenCreateArray&(j As Json)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateArray& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateArray& = JsonHadError: Exit Function
 
     idx = ___JsonGetEmptyToken&(j)
 
@@ -554,7 +554,7 @@ End Sub
 Function JsonTokenCreateObject&(j As Json)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateObject& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateObject& = JsonHadError: Exit Function
 
     idx = ___JsonGetEmptyToken&(j)
 
@@ -595,7 +595,7 @@ End Sub
 
 Function JsonGetRootToken&(j As Json)
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonGetRootToken& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonGetRootToken& = JsonHadError: Exit Function
 
     JsonGetRootToken& = j.RootToken
 End Function
@@ -1193,12 +1193,12 @@ End Function
 ' Returns the next token starting at nextIdx, skipping whitespace
 Function ___JsonLex&(json As String, lexer As ___JsonLexer)
     lexer.prevNextIdx = lexer.nextIdx
-    If lexer.nextIdx > Len(json) Then ___JsonLex& = ___JSON_LEX_End: Exit Function
+    If lexer.nextIdx > Len(json) Then lexer.startIdx = lexer.nextIdx: ___JsonLex& = ___JSON_LEX_End: Exit Function
 
     ' Skip to next non-whitespace character
     While ___JsonIsWhiteSpace&(Asc(json, lexer.nextIdx))
         lexer.nextIdx = lexer.nextIdx + 1
-        If lexer.nextIdx > Len(json) Then ___JsonLex& = ___JSON_LEX_End: Exit Function
+        If lexer.nextIdx > Len(json) Then lexer.startIdx = lexer.nextIdx: ___JsonLex& = ___JSON_LEX_End: Exit Function
     Wend
 
     Dim chr As _Byte
