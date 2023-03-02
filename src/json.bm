@@ -178,7 +178,11 @@ Function JsonTokenTotalChildren&(j As Json, idx As Long)
 
     ___JsonGetToken j, idx, t
 
+$If 32BIT Then
+    JsonTokenTotalChildren& = _CV(Long, _MK$(_Offset, t.ChildrenIdxs.SIZE / 4))
+$Else
     JsonTokenTotalChildren& = _CV(_Integer64, _MK$(_Offset, t.ChildrenIdxs.SIZE / 4))
+$End If
 End Function
 
 Function JsonTokenGetChild&(j As Json, idx As Long, childIdx As Long)
