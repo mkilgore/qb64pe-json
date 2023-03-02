@@ -4,7 +4,7 @@
 ' This library is designed to allow easy usage of JSON structures with QB64-PE
 ' code. It can be used to both parse existing JSON and create new JSON structures.
 
-$Let QB64PEJsonVersion = 1.0.0
+$Let QB64PEJsonVersion = QB64PE_JSON_VERSION
 
 ' If a Json procedure has an error, the error code will be stored in
 ' JsonHadError and a text version of the error will be in JsonError.
