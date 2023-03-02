@@ -19,6 +19,7 @@ Const JSON_ERR_KeyNotFound = -3
 Const JSON_ERR_NotInitialized = -4
 Const JSON_ERR_Invalid = -5
 Const JSON_ERR_TokenWrongType = -6
+Const JSON_ERR_TokenInvalid = -7
 
 Const JSONTOK_TYPE_FREE = 0
 Const JSONTOK_TYPE_OBJECT = 1
@@ -185,7 +186,7 @@ Declare Function JsonTokenGetPrimType&(j As Json, idx As Long)
 '    Result: The token for 30, the first element in the array.
 '
 '    Query: key1.key2.key3(5)
-'    Result: Error, the array start at index 0 so the last valid index is 5.
+'    Result: Error, the array starts at index 0 so the last valid index is 4.
 '            Attempting to access an index outside the bounds of the array
 '            generates an error.
 '
@@ -203,10 +204,11 @@ Declare Function JsonTokenGetPrimType&(j As Json, idx As Long)
 Declare Function JsonQuery&(j As Json, query As String)
 Declare Function JsonQueryValue$(j As Json, query As String)
 
-' Takes a JSON query string and finds the JSON tokent that it refers too.
-' This does not start at the root token, but instead starts at token 'startToken'
+' These work the same as their `JsonQuery&()` counterparts but do not start at
+' the root token, instead starting at token 'startToken'
 '
-' You can either recieve the value directly with `Value$`, or recieve the token index via `Token&`
+' You can either recieve the value directly with `Value$`, or recieve the token
+' index via `Token&`
 Declare Function JsonQueryFrom&(j As Json, startToken As Long, query As String)
 Declare Function JsonQueryFromValue$(j As Json, startToken As Long, query As String)
 
