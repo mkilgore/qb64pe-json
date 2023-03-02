@@ -256,24 +256,34 @@ Function ___JsonGetEmptyToken&(j As Json)
     ___JsonGetEmptyToken& = res
 End Function
 
-' FIXME: Mark all child tokens as well recursively
 Sub JsonTokenFree(j As Json, idx As Long)
-    Dim b As JsonTokenBlock, t As jsontok
+    Dim child As Long
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Sub
+    If Not ___JsonIsValidToken&(j, idx) Then Exit Function
+
+    For child = 0 To JsonTokenTotalChildren&(j, idx) - 1
+        JsonTokenFree j, JsonTokenGetChild&(j, idx, child)
+    Next
+
+    JsonTokenFreeShallow j, idx
+End Sub
+
+Sub JsonTokenFreeShallow(j As Json, idx As Long)
+    Dim t As jsontok, child As Long
+    ___JsonResetError
+    If Not ___JsonIsInitialized&(j) Then Exit Sub
+    If Not ___JsonIsValidToken&(j, idx) Then Exit Function
 
     ___JsonGetToken j, idx, t
 
     t.typ = JSONTOK_TYPE_FREE
     t.ParentIdx = j.NextFree
 
+    ___JsonTokenClear t
     ___JsonPutToken j, idx, t
 
     j.NextFree = idx
-End Sub
-
-Sub JsonTokenFreeShallow(j As Json, idx As Long)
-    JsonTokenFree j, idx
 End Sub
 
 Sub ___JsonGetToken(j As Json, idx As Long, t As jsontok)
