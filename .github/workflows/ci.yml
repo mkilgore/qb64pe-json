@@ -42,7 +42,9 @@ jobs:
     - name: Replace Version
       shell: bash
       run: |
-        sed -i 's/QB64PE_JSON_VERSION/${{ env.version }}/' ./src/json.bi
+        sed 's/QB64PE_JSON_VERSION/${{ env.version }}/' ./src/json.bi > ./src/json.bi.tmp
+        rm ./src/json.bi
+        mv ./src/json.bi.tmp ./src/json.bi
         cat ./src/json.bi
 
     - name: Install dependencies
