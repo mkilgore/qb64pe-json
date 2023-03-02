@@ -77,7 +77,7 @@ End Function
 Sub JsonInit(json As Json)
     ___JsonResetError
 
-    json.RootToken = 0
+    json.RootToken = -1
     json.TotalBlocks = 0
     json.NextFree = -1
 
