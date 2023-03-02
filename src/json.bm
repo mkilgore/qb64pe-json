@@ -1348,50 +1348,6 @@ Function ___JsonParseObject&(json As String, j As Json, lexer As ___JsonLexer, c
     ___JsonParseObject& = objToken
 End Function
 
-' FIXME: Unneeded?
-Function lexTokStr$(lex As Long)
-    Select Case lex
-        Case ___JSON_LEX_None:
-            lexTokStr$ = "None"
-
-        Case ___JSON_LEX_Null:
-            lexTokStr$ = "Null"
-
-        Case ___JSON_LEX_String:
-            lexTokStr$ = "String"
-
-        Case ___JSON_LEX_Number:
-            lexTokStr$ = "Number"
-
-        Case ___JSON_LEX_Bool:
-            lexTokStr$ = "Bool"
-
-        Case ___JSON_LEX_LeftBrace:
-            lexTokStr$ = "LeftBrace"
-
-        Case ___JSON_LEX_RightBrace:
-            lexTokStr$ = "RightBrace"
-
-        Case ___JSON_LEX_LeftBracket:
-            lexTokStr$ = "LeftBracket"
-
-        Case ___JSON_LEX_RightBracket:
-            lexTokStr$ = "RightBracket"
-
-        Case ___JSON_LEX_Comma:
-            lexTokStr$ = "Comma"
-
-        Case ___JSON_LEX_Colon:
-            lexTokStr$ = "Colon"
-
-        Case ___JSON_LEX_End:
-            lexTokStr$ = "End"
-
-        Case Else:
-            lexTokStr$ = "Unknown"
-    End Select
-End Function
-
 Function ___JsonParseArray&(json As String, j As Json, lexer As ___JsonLexer, curTok As Long)
     Dim arrToken As Long, t As jsontok, first As Long
     If curTok <> ___JSON_LEX_LeftBracket Then ___JsonParseArray& = JSON_ERR_Invalid: Exit Function

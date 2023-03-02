@@ -70,6 +70,49 @@ System
 
 '$include:'../../src/json.bm'
 
+Function lexTokStr$(lex As Long)
+    Select Case lex
+        Case ___JSON_LEX_None:
+            lexTokStr$ = "None"
+
+        Case ___JSON_LEX_Null:
+            lexTokStr$ = "Null"
+
+        Case ___JSON_LEX_String:
+            lexTokStr$ = "String"
+
+        Case ___JSON_LEX_Number:
+            lexTokStr$ = "Number"
+
+        Case ___JSON_LEX_Bool:
+            lexTokStr$ = "Bool"
+
+        Case ___JSON_LEX_LeftBrace:
+            lexTokStr$ = "LeftBrace"
+
+        Case ___JSON_LEX_RightBrace:
+            lexTokStr$ = "RightBrace"
+
+        Case ___JSON_LEX_LeftBracket:
+            lexTokStr$ = "LeftBracket"
+
+        Case ___JSON_LEX_RightBracket:
+            lexTokStr$ = "RightBracket"
+
+        Case ___JSON_LEX_Comma:
+            lexTokStr$ = "Comma"
+
+        Case ___JSON_LEX_Colon:
+            lexTokStr$ = "Colon"
+
+        Case ___JSON_LEX_End:
+            lexTokStr$ = "End"
+
+        Case Else:
+            lexTokStr$ = "Unknown"
+    End Select
+End Function
+
 Sub Test(jsonStr$)
     Dim lexer As ___JsonLexer
     lexer.nextIdx = 1
