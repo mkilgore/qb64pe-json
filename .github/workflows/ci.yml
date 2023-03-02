@@ -37,7 +37,7 @@ jobs:
     # tee is so the version can be seen in the build output
     - name: Calculate Version
       shell: bash
-      run: echo "version=${.ci/version.sh}" | tee >> $GITHUB_ENV
+      run: echo "version=$(.ci/version.sh)" | tee >> $GITHUB_ENV
 
     - name: Replace Version
       shell: bash
