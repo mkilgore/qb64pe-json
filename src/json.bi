@@ -35,7 +35,6 @@ Const JSONTOK_PRIM_NULL = 4
 ' Manipulate it using the provided Subs and Functions
 Type Json
     RootToken As Long
-    TotalTokens As Long
     TotalBlocks As Long
 
     NextFree As Long

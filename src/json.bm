@@ -60,7 +60,6 @@ Sub JsonInit(json As Json)
     ___JsonResetError
 
     json.RootToken = 0
-    json.TotalTokens = 0
     json.TotalBlocks = 0
     json.NextFree = -1
 
