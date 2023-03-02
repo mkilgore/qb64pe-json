@@ -105,12 +105,16 @@ jobs:
       run: ./tests/assert.sh ./tests/run_tests.sh ./qb64pe/qb64pe
 
     - uses: actions/upload-artifact@v3
-      if: always() && ${{ matrix.prefix == 'lnx' }}
+      if: ${{ matrix.prefix == 'lnx' }}
       with:
         name: qb64pe-json-${{ env.version }}
         path: |
           src/json.bi
           src/json.bm
+
+    - name: Create release zip
+      if: ${{ matrix.prefix == 'lnx' }}
+      run: zip qb64pe-json-${{ env.version }}.zip ./src/json.bi ./src/json.bm
 
     - name: Create release
       if: startsWith(github.ref, 'refs/tags/v') && ${{ matrix.prefix == 'lnx' }}
@@ -118,7 +122,6 @@ jobs:
       with:
         draft: true
         files: |
-          src/json.bi
-          src/json.bm
+          qb64pe-json-${{ env.version }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
