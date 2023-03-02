@@ -1,16 +1,8 @@
 
-' QB64-PE Json library
+' QB64-PE Json library, version QB64PE_JSON_VERSION
 '
 ' This library is designed to allow easy usage of JSON structures with QB64-PE
 ' code. It can be used to both parse existing JSON and create new JSON structures.
-
-$Let QB64PEJsonVersion = "QB64PE_JSON_VERSION"
-
-' If a Json procedure has an error, the error code will be stored in
-' JsonHadError and a text version of the error will be in JsonError.
-'
-' On success JsonHadError will be set to zero
-Dim Shared JsonError As String, JsonHadError As Long
 
 Const JSON_ERR_Success = 0
 Const JSON_ERR_BadQuery = -1
@@ -31,6 +23,12 @@ Const JSONTOK_PRIM_STRING = 1
 Const JSONTOK_PRIM_NUMBER = 2
 Const JSONTOK_PRIM_BOOL = 3
 Const JSONTOK_PRIM_NULL = 4
+
+' If a Json procedure has an error, the error code will be stored in
+' JsonHadError and a text version of the error will be in JsonError.
+'
+' On success JsonHadError will be set to zero
+Dim Shared JsonError As String, JsonHadError As Long
 
 ' !!! Do not touch anything in the Json object directly !!!
 ' Manipulate it using the provided Subs and Functions
@@ -55,7 +53,8 @@ Declare Sub      JsonClear(json As Json)
 ' Parses a JSON string into a json object. The json object should already be initialized.
 '
 ' Return value indicates whether the parse was a success (JSON_ERR_Success).
-' JsonHadError can also be checked
+' JsonHadError can also be checked. On success the RootToken will be set to the
+' result of the parse.
 Declare Function JsonParse&(j As Json, json As String)
 
 ' These functions create new Json tokens which can be used to create a new Json
