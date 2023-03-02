@@ -1112,7 +1112,12 @@ Function ___JsonLexNumber&(json As String, lexer As ___JsonLexer)
 
     ' Skip all digits in the integer part
     valStart = curIdx
-    While ___JsonIsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
+    While curIdx <= Len(json)
+        If Not ___JsonIsDigit(Asc(json, curIdx)) Then Exit While
+        curIdx = curIdx + 1
+    Wend
+
+    If curIdx > Len(json) Then GoTo returnNumber
 
     lexer.intPart = Val(Mid$(json, valStart, curIdx - valStart))
     if isNegative Then lexer.intPart = -lexer.intPart
@@ -1129,7 +1134,12 @@ Function ___JsonLexNumber&(json As String, lexer As ___JsonLexer)
         End If
 
         ' Skip all digits in the decimal part
-        While ___JsonIsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
+        While curIdx <= Len(json)
+            If Not ___JsonIsDigit(Asc(json, curIdx)) Then Exit While
+            curIdx = curIdx + 1
+        Wend
+
+        If curIdx > Len(json) Then GoTo returnNumber
 
         ' The decimal point is included, so this produces a floating point value
         lexer.fracPart = Val(Mid$(json, valStart, curIdx - valStart))
@@ -1152,12 +1162,18 @@ Function ___JsonLexNumber&(json As String, lexer As ___JsonLexer)
 
         ' Skip all digits in the decimal part
         valStart = curIdx
-        While ___JsonIsDigit(Asc(json, curIdx)): curIdx = curIdx + 1: Wend
+        While curIdx <= Len(json)
+            If Not ___JsonIsDigit(Asc(json, curIdx)) Then Exit While
+            curIdx = curIdx + 1
+        Wend
+
+        If curIdx > Len(json) Then GoTo returnNumber
 
         lexer.expPart = Val(Mid$(json, valStart, curIdx - valStart))
         If isNegative Then lexer.expPart = -lexer.expPart
     End If
 
+returnNumber:
     lexer.startIdx = lexer.nextIdx
     lexer.endIdx = curIdx - 1
     lexer.nextIdx = curIdx
