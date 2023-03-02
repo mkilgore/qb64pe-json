@@ -850,10 +850,10 @@ Function ___JsonQueryLex&(query As String, lex As ___JsonQLex)
     ___JsonQueryLex& = ___JSON_QLEX_Key
 End Function
 
-Function JsonQueryFromToken&(j As Json, startToken As Long, query As String)
+Function JsonQueryFrom&(j As Json, startToken As Long, query As String)
     Dim lex As ___JsonQLex, curTok As Long, first As Long
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonQueryFromToken& = JSON_ERR_NotInitialized: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonQueryFrom& = JsonHadError: Exit Function
 
     lex.curIdx = 1
     curTok = startToken
@@ -861,20 +861,20 @@ Function JsonQueryFromToken&(j As Json, startToken As Long, query As String)
 
     Dim tok As Long
     tok = ___JsonQueryLex&(query, lex)
-    If JsonHadError Then JsonQueryFromToken& = JsonHadError: Exit FUnction
+    If JsonHadError Then JsonQueryFrom& = JsonHadError: Exit FUnction
     Do
         ' Array tokens can come one after another
         While tok = ___JSON_QLEX_Index
             If JsonTokenGetType&(j, curTok) <> JSONTOK_TYPE_ARRAY Then
                 ___JsonSetError JSON_ERR_BADQUERY, "Array bounds were used on a non-array token, at position:" + Str$(lex.curIdx)
-                JsonQueryFromToken& = JSON_ERR_BADQUERY
+                JsonQueryFrom& = JSON_ERR_BADQUERY
                 Exit Function
             End If
 
             curTok = JsonTokenGetChild&(j, curTok, lex.index)
-            If JsonHadError Then JsonQueryFromToken& = JsonHadError: Exit FUnction
+            If JsonHadError Then JsonQueryFrom& = JsonHadError: Exit FUnction
             tok = ___JsonQueryLex&(query, lex)
-            If JsonHadError Then JsonQueryFromToken& = JsonHadError: Exit FUnction
+            If JsonHadError Then JsonQueryFrom& = JsonHadError: Exit FUnction
             first = 0
         Wend
 
@@ -884,16 +884,16 @@ Function JsonQueryFromToken&(j As Json, startToken As Long, query As String)
         If Not first Then
             If tok <> ___JSON_QLEX_Dot Then
                  ___JsonSetError JSON_ERR_BADQUERY, "Expected dot before key name, at position:" + Str$(lex.curIdx)
-                 JsonQueryFromToken& = JSON_ERR_BADQUERY
+                 JsonQueryFrom& = JSON_ERR_BADQUERY
                  Exit Function
             End If
 
             ' Token after dot must be a key, not array
             tok = ___JsonQueryLex&(query, lex)
-            If JsonHadError Then JsonQueryFromToken& = JsonHadError: Exit FUnction
+            If JsonHadError Then JsonQueryFrom& = JsonHadError: Exit FUnction
             If tok <> ___JSON_QLEX_Key Then
                  ___JsonSetError JSON_ERR_BADQUERY, "Expected key name after dot, at position:" + Str$(lex.curIdx)
-                 JsonQueryFromToken& = JSON_ERR_BADQUERY
+                 JsonQueryFrom& = JSON_ERR_BADQUERY
                  Exit Function
             End If
         End If
@@ -918,43 +918,43 @@ Function JsonQueryFromToken&(j As Json, startToken As Long, query As String)
 
             If found = -1 Then
                 ___JsonSetError JSON_ERR_KEYNOTFOUND, "Key " + ___JsonAddQuotes$(lex.keyName) + " not found!"
-                JsonQueryFromToken& = JSON_ERR_KeyNotFound
+                JsonQueryFrom& = JSON_ERR_KeyNotFound
                 Exit Function
             End If
 
             curTok = found
 
             tok = ___JsonQueryLex&(query, lex)
-            If JsonHadError Then JsonQueryFromToken& = JsonHadError: Exit FUnction
+            If JsonHadError Then JsonQueryFrom& = JsonHadError: Exit FUnction
             If tok = ___JSON_QLEX_Key Then
                  ___JsonSetError JSON_ERR_BADQUERY, "Unexpected key, at position:" + Str$(lex.curIdx)
-                 JsonQueryFromToken& = JSON_ERR_BADQUERY
+                 JsonQueryFrom& = JSON_ERR_BADQUERY
                  Exit Function
             End If
         Wend
     Loop
 
-    JsonQueryFromToken& = curTok
+    JsonQueryFrom& = curTok
 End Function
 
-Function JsonQueryToken&(j As Json, query As String)
-    JsonQueryToken& = JsonQueryFromToken&(j, j.RootToken, query)
+Function JsonQuery&(j As Json, query As String)
+    JsonQuery& = JsonQueryFrom&(j, j.RootToken, query)
 End Function
 
 ' Returns the value of the token the query refers too
-Function jsonqueryfromvalue$ (j As Json, startToken As Long, query As String)
+Function jsonQueryFromValue$ (j As Json, startToken As Long, query As String)
     Dim t As Long
-    t = JsonQueryFromToken&(j, startToken, query)
+    t = JsonQueryFrom&(j, startToken, query)
 
     If JsonHadError Then Exit Function
 
-    jsonqueryfromvalue$ = JsonTokenGetValueStr$(j, t)
+    jsonQueryFromValue$ = JsonTokenGetValueStr$(j, t)
 End Function
 
 ' Returns the value of the token the query refers too
 Function JsonQueryValue$ (j As Json, query As String)
     Dim t As Long
-    t = JsonQueryToken&(j, query)
+    t = JsonQuery&(j, query)
 
     If JsonHadError Then Exit Function
 

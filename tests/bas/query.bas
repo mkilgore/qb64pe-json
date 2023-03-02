@@ -115,7 +115,7 @@ Dim i As Long
 For i = 1 To UBOUND(queryTests)
     Dim res As Long
 
-    res = JsonQueryFromToken&(j, j.RootToken, queryTests(i).Query)
+    res = JsonQueryFrom&(j, j.RootToken, queryTests(i).Query)
     Print "Query Test"; i;
 
     If res = queryTests(i).Result Then

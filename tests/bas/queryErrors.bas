@@ -50,7 +50,7 @@ Dim i As Long
 For i = 1 To Ubound(tests)
     Dim res As long
 
-    res = JsonQueryToken&(j, tests(i).query)
+    res = JsonQuery&(j, tests(i).query)
 
     If res = tests(i).errCode And JsonHadError = tests(i).errCode And JsonError = tests(i).errStr Then
         Print "Test "; i; ": PASS!"
