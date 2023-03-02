@@ -104,6 +104,10 @@ jobs:
       shell: bash
       run: ./tests/assert.sh ./tests/run_tests.sh ./qb64pe/qb64pe
 
+    - name: Create release zip
+      if: ${{ matrix.prefix == 'lnx' }}
+      run: cd src && zip ../qb64pe-json-${{ env.version }}.zip ./json.bi ./json.bm
+
     - uses: actions/upload-artifact@v3
       if: ${{ matrix.prefix == 'lnx' }}
       with:
@@ -111,10 +115,7 @@ jobs:
         path: |
           src/json.bi
           src/json.bm
-
-    - name: Create release zip
-      if: ${{ matrix.prefix == 'lnx' }}
-      run: cd src && zip ../qb64pe-json-${{ env.version }}.zip ./json.bi ./json.bm
+          qb64pe-json-${{ env.version }}.zip
 
     - name: Create release
       if: startsWith(github.ref, 'refs/tags/v') && matrix.prefix == 'lnx'
