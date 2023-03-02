@@ -1379,7 +1379,7 @@ Function ___JsonParseArray&(json As String, j As Json, lexer As ___JsonLexer, cu
     ___JsonParseArray& = arrToken
 End Function
 
-Function JsonParse&(json As String, j As Json)
+Function JsonParse&(j As Json, json As String)
     Dim lexer As ___JsonLexer, curTok As Long, result As Long, lastPos As Long
     lexer.nextIdx = 1
 

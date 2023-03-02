@@ -1,4 +1,4 @@
-' Option _Explicit
+Option _Explicit
 $Console:Only
 
 ChDir _StartDir$
@@ -13,7 +13,7 @@ JsonInit j
 
 json = ReadFile$(COMMAND$(1))
 
-ret = JsonParse&(json, j)
+ret = JsonParse&(j, json)
 
 Print "Parse result: ";
 If ret = JSON_ERR_Success Then

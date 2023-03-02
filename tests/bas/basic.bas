@@ -10,7 +10,7 @@ JsonInit j
 Dim json As String, ret As Long
 json = "{" + AddQuotes$("key1") + ":true, " + AddQuotes$("key2") + ": 20       , " + AddQuotes$("foo") + ": [ 20, 30, 40 ]}"
 
-ret = JsonParse&(json, j)
+ret = JsonParse&(j, json)
 
 Print "Original json: "; json
 Print "Return: "; ret
