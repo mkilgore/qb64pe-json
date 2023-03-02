@@ -20,9 +20,9 @@ jobs:
           - os: windows-2022
             platform: x64
             prefix: win
-            #           - os: windows-2022
-            #             platform: x86
-            #             prefix: win
+          - os: windows-2022
+            platform: x86
+            prefix: win
 
     runs-on: ${{ matrix.os }}
 
