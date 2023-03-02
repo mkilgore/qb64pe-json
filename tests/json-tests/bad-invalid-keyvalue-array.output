@@ -1,9 +1,2 @@
 Parse result: Failure -5 
 JsonHadError: -5 , Error: Expected comma at position: 12
-
-Token 0 type: Array
-  Token 1 type: Value, value: "key"
-
-[
-  "key"
-]

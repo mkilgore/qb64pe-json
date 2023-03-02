@@ -1,7 +1,2 @@
 Parse result: Failure -5 
 JsonHadError: -5 , Error: Expected digit after decimal point at 12
-
-Token 0 type: Object
-
-{
-}

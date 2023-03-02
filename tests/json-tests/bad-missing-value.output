@@ -1,7 +1,2 @@
 Parse result: Failure -5 
 JsonHadError: -5 , Error: Unexpected token at position 11
-
-Token 0 type: Object
-
-{
-}

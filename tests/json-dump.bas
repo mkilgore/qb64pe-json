@@ -13,26 +13,25 @@ JsonInit j
 
 json = ReadFile$(COMMAND$(1))
 
-' json = "{" + AddQuotes$("key1") + ":true}"
-
 ret = JsonParse&(json, j)
 
 Print "Parse result: ";
 If ret = JSON_ERR_Success Then
     Print "Success"; ret
+
+    Print
+    PrintTokens j, j.RootToken, 0
+
+    Dim fmt As JsonFormat
+    fmt.Indented = -1
+
+    Print
+    Print JsonRenderFormatted$(j, fmt)
 Else
     Print "Failure "; ret
     Print "JsonHadError: "; JsonHadError; ", Error: "; JsonError
 End If
-Print
 
-PrintTokens j, j.RootToken, 0
-Print
-
-Dim fmt As JsonFormat
-fmt.Indented = -1
-
-Print JsonRenderFormatted$(j, fmt)
 
 JsonClear j
 System
@@ -54,7 +53,6 @@ Sub PrintTokens(j As Json, tok As Long, lvl As Long)
     Else
         Print
     End If
-    ' Print JsonRenderIndexFormatted$(j, tok, fmt)
 
     Dim i As Long
     For i = 0 To JsonTokenTotalChildren&(j, tok) - 1

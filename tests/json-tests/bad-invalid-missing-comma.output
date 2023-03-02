@@ -1,10 +1,2 @@
 Parse result: Failure -5 
 JsonHadError: -5 , Error: Unexpected character at position: 21
-
-Token 0 type: Object
-  Token 2 type: Key, value: "key"
-    Token 1 type: Value, value: "value"
-
-{
-  "key": "value"
-}
