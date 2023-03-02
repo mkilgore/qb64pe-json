@@ -25,9 +25,10 @@ Const JSONTOK_PRIM_BOOL = 3
 Const JSONTOK_PRIM_NULL = 4
 
 ' If a Json procedure has an error, the error code will be stored in
-' JsonHadError and a text version of the error will be in JsonError.
+' JsonHadError and a text version of the error will be in JsonError. The error
+' code will be any of the defined JSON_ERR_* constants.
 '
-' On success JsonHadError will be set to zero
+' On success JsonHadError will be set to zero, which is JSON_ERR_Success
 Dim Shared JsonError As String, JsonHadError As Long
 
 ' !!! Do not touch anything in the Json object directly !!!
