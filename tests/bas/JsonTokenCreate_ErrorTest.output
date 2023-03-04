@@ -1,4 +1,4 @@
-JsonTokenCreateBoolean: PASS!
+JsonTokenCreateBool: PASS!
 JsonTokenCreateInteger: PASS!
 JsonTokenCreateDouble: PASS!
 JsonTokenCreateNumber: PASS!

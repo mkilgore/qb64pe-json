@@ -409,10 +409,10 @@ Function JsonTokenCreateString&(j As Json, s As String)
     JsonTokenCreateString& = ___JsonTokenCreatePrim&(j, s, JSONTOK_PRIM_STRING)
 End Function
 
-Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
+Function JsonTokenCreateBool&(j As Json, b As _Byte)
     Dim idx As Long, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateBoolean& = JsonHadError: Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenCreateBool& = JsonHadError: Exit Function
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -422,7 +422,7 @@ Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
     t.intPart = b
 
     ___JsonPutToken j, idx, t
-    JsonTokenCreateBoolean& = idx
+    JsonTokenCreateBool& = idx
 End Function
 
 Function JsonTokenCreateInteger&(j As Json, i As _Integer64)
@@ -1283,7 +1283,7 @@ Function ___JsonParseValue&(json As String, j As Json, lexer As ___JsonLexer, cu
             ___JsonParseValue& = JsonTokenCreateNumber&(j, lexer.intPart, lexer.fracPart, lexer.expPart)
 
         Case ___JSON_LEX_Bool:
-            ___JsonParseValue& = JsonTokenCreateBoolean&(j, lexer.intPart)
+            ___JsonParseValue& = JsonTokenCreateBool&(j, lexer.intPart)
 
         Case ___JSON_LEX_String:
             ___JsonParseValue& = JsonTokenCreateString&(j, ___JsonUnescapeString$(Mid$(json, lexer.startIdx, lexer.endIdx - lexer.startIdx + 1)))

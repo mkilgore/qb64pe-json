@@ -62,7 +62,7 @@ Declare Function JsonParse&(j As Json, json As String)
 ' structure or modify an existing one. They return a Long which is an index
 ' referring to the token, the index can then be passed to the other functions
 ' to make use of this token.
-Declare Function JsonTokenCreateBoolean&(j As Json, b As _Byte)
+Declare Function JsonTokenCreateBool&(j As Json, b As _Byte)
 Declare Function JsonTokenCreateInteger&(j As Json, i As _Integer64)
 Declare Function JsonTokenCreateDouble&(j As Json, s As Double)
 Declare Function JsonTokenCreateNumber&(j As Json, intPart As _Integer64, fracPart As Double, expPart As _Integer64)

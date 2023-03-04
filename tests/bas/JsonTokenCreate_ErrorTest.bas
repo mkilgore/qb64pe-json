@@ -5,8 +5,8 @@ $Console:Only
 
 Dim j As Json, res As Long
 
-res = JsonTokenCreateBoolean&(j, -1)
-ExpectJsonError "JsonTokenCreateBoolean", res, JSON_ERR_NotInitialized
+res = JsonTokenCreateBool&(j, -1)
+ExpectJsonError "JsonTokenCreateBool", res, JSON_ERR_NotInitialized
 
 res = JsonTokenCreateInteger&(j, 20)
 ExpectJsonError "JsonTokenCreateInteger", res, JSON_ERR_NotInitialized

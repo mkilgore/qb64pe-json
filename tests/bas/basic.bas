@@ -24,7 +24,7 @@ JsonInit j
 Dim As Long s, b, flo, arr, k, k2, obj
 
 s& = JsonTokenCreateString&(j, "This is a string!")
-b& = JsonTokenCreateBoolean&(j, -1)
+b& = JsonTokenCreateBool&(j, -1)
 flo& = JsonTokenCreateInteger(j, 5000100)
 
 arr& = JsonTokenCreateArray&(j)
