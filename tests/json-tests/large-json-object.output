@@ -22,7 +22,7 @@ Token 0 type: Object
             Token 18 type: Key, value: "url"
               Token 17 type: Value, value: "https://pokeapi.co/api/v2/ability/292/"
         Token 21 type: Key, value: "is_hidden"
-          Token 20 type: Value, value: "true"
+          Token 20 type: Value, value: "false"
         Token 23 type: Key, value: "slot"
           Token 22 type: Value, value: "2"
       Token 24 type: Object
@@ -17328,7 +17328,7 @@ Token 0 type: Object
         "name": "sharpness",
         "url": "https://pokeapi.co/api/v2/ability/292/"
       },
-      "is_hidden": true,
+      "is_hidden": false,
       "slot": 2
     },
     {

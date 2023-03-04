@@ -1283,7 +1283,7 @@ Function ___JsonParseValue&(json As String, j As Json, lexer As ___JsonLexer, cu
             ___JsonParseValue& = JsonTokenCreateNumber&(j, lexer.intPart, lexer.fracPart, lexer.expPart)
 
         Case ___JSON_LEX_Bool:
-            ___JsonParseValue& = JsonTokenCreateBool&(j, lexer.intPart)
+            ___JsonParseValue& = JsonTokenCreateBool&(j, lexer.bool)
 
         Case ___JSON_LEX_String:
             ___JsonParseValue& = JsonTokenCreateString&(j, ___JsonUnescapeString$(Mid$(json, lexer.startIdx, lexer.endIdx - lexer.startIdx + 1)))
