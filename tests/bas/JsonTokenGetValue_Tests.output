@@ -1,0 +1,25 @@
+Resulting Json:
+{
+  "bool_true": true,
+  "bool_false": false,
+  "null": null,
+  "string_empty": "",
+  "string_foobar": "foobar",
+  "number_integer": 100000,
+  "number_integer_neg": -100000,
+  "number_decimal": 1.75
+}
+bool_true: PASS!
+bool_true str: PASS!
+bool_true: PASS!
+bool_false str: PASS!
+null: PASS!
+null str: PASS!
+string_empty: PASS!
+string_foobar: PASS!
+number_integer: PASS!
+number_integer str: PASS!
+number_integer_neg: PASS!
+number_integer_neg str: PASS!
+number_decimal: PASS!
+number_decimal str: PASS!
