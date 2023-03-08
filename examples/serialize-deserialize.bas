@@ -5,7 +5,7 @@
 ' This paticular example reads the Json from pokemon-party.json and deserializes
 ' it into 'Pokemon' type objects. It then shows that the Pokemon array got
 ' filled in correctly, and how you can then use the ItemSerialize&() function
-' to build a JSON array of just the heldItem
+' to build a JSON array of just the heldItems from each Pokemon.
 '
 ' We then use PokemonSerialize to render the individual Pokemon objects back
 ' into Json, effectively taking a round trip from pokemon-party.json, to
@@ -155,6 +155,7 @@ Function PokemonSerialize&(j As Json, p As Pokemon)
 
     JsonTokenObjectAdd j, rootToken, JsonTokenCreateKey&(j, "name", JsonTokenCreateString&(j, RTrim$(p.nam)))
 
+    ' To serialize members of other Type's in the Pokemon Type we simply call that Type's own serialize function
     JsonTokenObjectAdd j, rootToken, JsonTokenCreateKey&(j, "baseStats", PokemonStatsSerialize&(j, p.baseStats))
     JsonTokenObjectAdd j, rootToken, JsonTokenCreateKey&(j, "curStats", PokemonStatsSerialize&(j, p.curStats))
     JsonTokenObjectAdd j, rootToken, JsonTokenCreateKey&(j, "heldItem", ItemSerialize&(j, p.heldItem))
@@ -177,6 +178,9 @@ End Function
 ' to the root of a serialized object, they fill in the provided object with the
 ' information contained within that JSON structure.
 '
+' In practice this mostly means a lot of usage of JsonQueryFrom&() And the
+' JsonTokenGetValue*() functions.
+'
 Sub PokemonStatsDeserialize(j As Json, token As Long, stats As PokemonStats)
     stats.hp = JsonTokenGetValueInteger&&(j, JsonQueryFrom&(j, token, "hp"))
     stats.attack = JsonTokenGetValueInteger&&(j, JsonQueryFrom&(j, token, "attack"))
@@ -198,6 +202,8 @@ End Sub
 Sub PokemonDeserialize(j As Json, token As Long, p As Pokemon)
     p.nam = JsonQueryFromValue$(j, token, "name")
 
+    ' To deserialize members of other Type's we simply call that Type's own
+    ' deserialize function.
     PokemonStatsDeserialize j, JsonQueryFrom&(j, token, "baseStats"), p.baseStats
     PokemonStatsDeserialize j, JsonQueryFrom&(j, token, "curStats"), p.curStats
 
