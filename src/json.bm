@@ -691,11 +691,11 @@ Function JsonRender$(j As json)
     JsonRender$ = ___JsonRenderInternal$(j, j.RootToken, state)
 End Function
 
-Function JsonRenderIndex$(j As json, idx As Long)
+Function JsonRenderToken$(j As json, idx As Long)
     Dim state As ___JsonFmtState
     state.format.Indented = -1
 
-    JsonRenderIndex$ = ___JsonRenderInternal$(j, idx, state)
+    JsonRenderToken$ = ___JsonRenderInternal$(j, idx, state)
 End Function
 
 Function JsonRenderFormatted$(j As json, format As JsonFormat)
@@ -705,11 +705,11 @@ Function JsonRenderFormatted$(j As json, format As JsonFormat)
     JsonRenderFormatted$ = ___JsonRenderInternal$(j, j.RootToken, state)
 End Function
 
-Function JsonRenderIndexFormatted$(j As json, idx As Long, format As JsonFormat)
+Function JsonRenderTokenFormatted$(j As json, idx As Long, format As JsonFormat)
     Dim state As ___JsonFmtState
     state.format = format
 
-    JsonRenderIndexFormatted$ = ___JsonRenderInternal$(j, idx, state)
+    JsonRenderTokenFormatted$ = ___JsonRenderInternal$(j, idx, state)
 End Function
 
 Function ___JsonGetRawStrValue$(j As json, t As jsontok)

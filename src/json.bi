@@ -95,9 +95,9 @@ Declare Function JsonGetRootToken&(j As Json)
 ' Takes a Json object and "renders" the JSON string it represents.
 '
 ' JsonRender$ creates the JSON starting at the root token.
-' JsonRenderIndex$ creates the JSON starting at the provided token.
+' JsonRenderToken$ creates the JSON starting at the provided token.
 Declare Function JsonRender$(j As json)
-Declare Function JsonRenderIndex$(j As json, idx As Long)
+Declare Function JsonRenderToken$(j As json, idx As Long)
 
 Type JsonFormat
     Indented As _Byte
@@ -105,7 +105,7 @@ End Type
 
 ' Renders the Json with the given formatting options
 Declare Function JsonRenderFormatted$(j As Json, format As JsonFormat)
-Declare Function JsonRenderIndexFormatted$(j As Json, idx As Long, format As JsonFormat)
+Declare Function JsonRenderTokenFormatted$(j As Json, idx As Long, format As JsonFormat)
 
 ' Returns the token's value in string form:
 '
