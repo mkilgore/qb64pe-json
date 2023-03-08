@@ -99,12 +99,12 @@ jobs:
       working-directory: ./qb64pe
       run: ./qb64pe -v
 
-    - name: Test
+    - name: Test Json Parsing
       if: always() && steps.qb64pe-version.outcome == 'success'
       shell: bash
       run: ./tests/assert.sh ./tests/run_json_tests.sh ./qb64pe/qb64pe
 
-    - name: Test2
+    - name: Test Programs
       if: always() && steps.qb64pe-version.outcome == 'success'
       shell: bash
       run: ./tests/assert.sh ./tests/run_tests.sh ./qb64pe/qb64pe
