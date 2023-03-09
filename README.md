@@ -19,16 +19,17 @@ files via `'$include:`.
 Overall Design
 --------------
 
-The main type of qb64pe-json is the `Json` Type. After declaring one, you need
-to pass it to `JsonInit` to initialize it, and eventually pass it to
-`JsonClear` ti release it. Not passing a `Json` object to `JsonClear` will
-result in memory leaks.
-
 qb64pe-json works by turning a JSON structure into a collection of "tokens",
 which are kept internal to a `Json` object. Tokens are allocated as needed, and
 token ids (indexes) are returned from several APIs. You can then pass the token
 id into many of the APIs to interact with a specific token, to do things such
-as get its value, get its children, modify it, etc.
+as get its value, get its children, modify it, etc. Valid token IDs are always
+positive.
+
+The main Type in qb64pe-json is the `Json` Type. After declaring one, you need
+to pass it to `JsonInit` to initialize it, and eventually pass it to
+`JsonClear` to release it. Not passing a `Json` object to `JsonClear` will
+result in memory leaks.
 
 There are four types of tokens - Objects, Arrays, Keys, and Values. Values are
 then split up into several "primitive" types a value can be, which are strings,
@@ -74,7 +75,7 @@ retrive the actual value 20 as an integer.
 array you can make use of `JsonTokenTotalChildren(array)` and pass it the token
 id to retrieve the number of children (entries) in that array. You can then
 additionally make use of `JsonTokenGetChild(array, index)` to get the token id
-of each child of the array. Note the indexes into the array start at zero Ex.
+of each child of the array. Note the indexes into the array start at zero, so
 `JsonTokenGetChild(array, 0)` would return 8, the bool in the array since it is
 the first entry. `JsonTokenGetChild(array, 2)` would return 10, the last entry
 in the array. You can of course then pass those token ids to the various
@@ -90,13 +91,13 @@ type. If its type is `JSONTOK_TYPE_VALUE`, then you can additionally use
 of the base of the entire JSON structure. Several APIs start at the RootToken
 automatically, such as `JsonQuery()`, `JsonRender()`, etc. However all APIs
 offer an option to take a token directly to start with, ignoring the RootToken.
-This is powerful as it allows you to treat smaller subsets of the entire
-structure as their own Json structure. For example in the above strucutre, you
+This is powerful as it allows you to treat smaller subtrees of the entire
+structure as their own Json structure. For example in the above structure, you
 can use `JsonQueryFrom(3, "key2")` to do a query starting from the Object with
-index 3, completely ignoring the object it's contained in.
+index 3, completely ignoring the Object it's contained in.
 
-Errors are reported from qb64pe-json via the global JsonHadError and JsonError
-variables. JsonHadError is zero (JSON_ERR_Success) when a function was
+Errors are reported from qb64pe-json via the global `JsonHadError` and `JsonError`
+variables. `JsonHadError` is zero (`JSON_ERR_Success`) when a function was
 successful, and a negative value when an error occurs. The negative values
 corespond to the `JSON_ERR_*` constants, and indicate the specific kind of
 error that occured. `JsonError` will contain a human-readable string version of
