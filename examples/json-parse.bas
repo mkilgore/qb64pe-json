@@ -34,7 +34,7 @@ Print "stringKey: "; JsonTokenGetValueStr$(j, JsonQuery&(j, "stringKey"))
 ' Same thing, but the target is a number token instead
 Print "numberKey: "; JsonTokenGetValueInteger&&(j, JsonQuery&(j, "numberKey"))
 
-' Same thing, but the target is a number token instead
+' Same thing, but the target is a bool token instead
 Print "boolKey: "; JsonTokenGetValueBool&(j, JsonQuery&(j, "boolKey"))
 
 ' Perform a query several levels down
