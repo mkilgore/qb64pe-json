@@ -59,7 +59,7 @@ End Function
 Function ___JsonIsValidToken&(j As Json, idx As Long)
     Dim t As jsontok
 
-    If idx < 0 Then GoTo retErr
+    If idx <= 0 Then GoTo retErr
     If idx >= (_Shl(1, JSON_BLOCK_SHIFT) * j.TotalBlocks) Then GoTo retErr
 
     ___JsonGetToken j, idx, t
@@ -116,6 +116,11 @@ Sub ___JsonTokenBlockInit(b As JsonTokenBlock, blockIdxCpy As Long, nextFree As 
     b.m = _MemNew(tokCount * Len(t))
 
     For i = tokCount - 1 To 0 Step -1
+        ' Special case, the "zero token" is not used to prevent common errors
+        ' (variables default to zero, so Ex. misnamed variables results in
+        ' using token zero by mistake)
+        If blockIdx = 0 And i = 0 Then t.ParentIdx = 0: _MemPut b.m, b.m.OFFSET + i * Len(t), t: _Continue
+
         t.ParentIdx = nextFree
 
         _MemPut b.m, b.m.OFFSET + i * Len(t), t
