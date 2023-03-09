@@ -1,5 +1,5 @@
 qb64pe-json
------------
+===========
 
 `qb64pe-json` is a JSON parsing and creation library for QB64-PE. Given a
 string containing JSON, it can convert it into a Json object which can then be
@@ -17,7 +17,7 @@ the `json.bi` and `json.bm` files into your project. Then reference the two
 files via `'$include:`.
 
 Overall Design
-==============
+--------------
 
 The main type of qb64pe-json is the `Json` Type. After declaring one, you need
 to pass it to `JsonInit` to initialize it, and eventually pass it to
@@ -103,7 +103,7 @@ error that occured. `JsonError` will contain a human-readable string version of
 the error.
 
 JSON Creation
-=============
+-------------
 
 In addition to parsing JSON, qb64pe-json allows you to create the Json
 structure yourself and then turn it into a JSON string (for storing or sending
@@ -123,7 +123,7 @@ it allows you to include indentation in the result, which makes it easier to
 read.
 
 UTF-8 Handling
-==============
+--------------
 
 It should be kept in mind that JSON strings are required to be valid UTF-8, this
 is part of the JSON specification. QB64-PE in comparison does not use UTF-8,
