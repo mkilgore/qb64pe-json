@@ -46,7 +46,7 @@ Sub PrintTokens(j As Json, tok As Long, lvl As Long)
     Dim fmt As JsonFormat
     fmt.Indented = 0
 
-    Print Space$(lvl * 2); "Token"; tok; "type: "; ___JsonTokenTypeString$(JsonTokenGetType&(j, tok));
+    Print Space$(lvl * 2); "type: "; ___JsonTokenTypeString$(JsonTokenGetType&(j, tok));
 
     If JsonTokenGetType&(j, tok) = JSONTOK_TYPE_VALUE Or JsonTokenGetType&(j, tok) = JSONTOK_TYPE_KEY Then
         Print ", value: "; AddQuotes$(JsonTokenGetValueStr$(j, tok))

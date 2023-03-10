@@ -1,8 +1,8 @@
 Parse result: Success 0 
 
-Token 0 type: Object
-  Token 2 type: Key, value: "key"
-    Token 1 type: Value, value: "value"
+type: Object
+  type: Key, value: "key"
+    type: Value, value: "value"
 
 {
   "key": "value"
