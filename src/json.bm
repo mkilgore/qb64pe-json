@@ -1063,6 +1063,7 @@ Function ___JsonLexString&(json As String, lexer As ___JsonLexer)
 
     stringEnd = lexer.nextIdx
 
+    ' FIXME: The string can have UTF-8 characters, we need to skip them
     While stringEnd < Len(json)
         Dim chr As _Byte
         stringEnd = stringEnd + 1
