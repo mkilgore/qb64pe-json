@@ -44,15 +44,15 @@ End Function
 
 Function ___JsonIsRightType&(j As Json, idx As Long, typ As Long)
     If JsonTokenGetType&(j, idx) = typ Then ___JsonIsRightType& = -1: Exit Function
-    JsonHadError = JSON_ERR_TokenWrongType
     JsonError = "Json Token was passed to function requiring type '" + ___JsonTokenTypeString$(typ) + "' but is actually type: '" + ___JsonTokenTypeString$(JsonTokenGetType&(j, idx))
+    JsonHadError = JSON_ERR_TokenWrongType
     ___JsonIsRightType& = 0
 End Function
 
 Function ___JsonIsRightPrimType&(j As Json, idx As Long, primType As Long)
     If JsonTokenGetType&(j, idx) = JSONTOK_TYPE_VALUE And JsonTokenGetPrimType&(j, idx) = primType Then ___JsonIsRightPrimType& = -1: Exit Function
-    JsonHadError = JSON_ERR_TokenWrongType
     JsonError = "Json Token was passed to function requiring type '" + ___JsonTokenPrimTypeString$(primType) + "' but is actually type: '" + ___JsonTokenPrimTypeString$(JsonTokenGetPrimType&(j, idx))
+    JsonHadError = JSON_ERR_TokenWrongType
     ___JsonIsRightPrimType& = 0
 End Function
 
