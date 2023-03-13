@@ -1,0 +1,34 @@
+TotalChildren: 0: PASS!
+TotalChildren: 10000: PASS!
+GetChild: 0: PASS!
+GetChild: 10000: PASS!
+GetType: 0: PASS!
+GetType: 10000: PASS!
+GetPrimType: 0: PASS!
+GetPrimType: 10000: PASS!
+Free: 0: PASS!
+Free: 10000: PASS!
+Free: 0: PASS!
+Free: 10000: PASS!
+CreateKey: 0: PASS!
+CreateKey: 10000: PASS!
+ArrayAdd: Array 0: PASS!
+ArrayAdd: Array 10000: PASS!
+ArrayAdd: Child 0: PASS!
+ArrayAdd: Child 10000: PASS!
+ArrayAdd: Array 0: PASS!
+ArrayAdd: Array 10000: PASS!
+ArrayAdd: Child 0: PASS!
+ArrayAdd: Child 10000: PASS!
+SetRootToken: 0: PASS!
+SetRootToken: 10000: PASS!
+GetValueStr: 0: PASS!
+GetValueStr: 10000: PASS!
+GetValueBool: 0: PASS!
+GetValueBool: 10000: PASS!
+GetValueInteger: 0: PASS!
+GetValueInteger: 10000: PASS!
+GetValueDouble: 0: PASS!
+GetValueDouble: 10000: PASS!
+QueryFrom: 0: PASS!
+QueryFrom: 10000: PASS!
