@@ -21,10 +21,9 @@ Overall Design
 
 qb64pe-json works by turning a JSON structure into a collection of "tokens",
 which are kept internal to a `Json` object. Tokens are allocated as needed, and
-token ids (indexes) are returned from several APIs. You can then pass the token
-id into many of the APIs to interact with a specific token, to do things such
-as get its value, get its children, modify it, etc. Valid token IDs are always
-positive.
+token IDs are returned from several Functions. You can then pass a token
+ID into many of the APIs to interact with a the token, such as get its value,
+get its children, modify it, etc. Valid token IDs are always positive.
 
 The main Type in qb64pe-json is the `Json` Type. After declaring one, you need
 to pass it to `JsonInit` to initialize it, and eventually pass it to
@@ -63,22 +62,22 @@ Object (1)
     - Value (type = number, value = 50) (12)
 ```
 
-The numbers after each token signify its id, which is what will be returned by
+The numbers after each token signify its ID, which is what will be returned by
 the API when refering to that paticular token. The typical way to interact with this
 structure is through `JsonQuery()`, which takes a query string and returns the
 token identified by it. For example, if you do `JsonQuery(json, "key1.key2")`,
-it will return 5, which is the token id for the "20" Value token. You can then
-pass the token id from that query to `JsonTokenGetValueInteger(token)` to
+it will return 5, which is the token ID for the "20" Value token. You can then
+pass the token ID from that query to `JsonTokenGetValueInteger(token)` to
 retrive the actual value 20 as an integer.
 
-`JsonQuery(json, "key2.key3")` returns 7, the token id for the Array. With this
+`JsonQuery(json, "key2.key3")` returns 7, the token ID for the Array. With this
 array you can make use of `JsonTokenTotalChildren(array)` and pass it the token
-id to retrieve the number of children (entries) in that array. You can then
-additionally make use of `JsonTokenGetChild(array, index)` to get the token id
+ID to retrieve the number of children (entries) in that array. You can then
+additionally make use of `JsonTokenGetChild(array, index)` to get the token ID
 of each child of the array. Note the indexes into the array start at zero, so
 `JsonTokenGetChild(array, 0)` would return 8, the bool in the array since it is
 the first entry. `JsonTokenGetChild(array, 2)` would return 10, the last entry
-in the array. You can of course then pass those token ids to the various
+in the array. You can of course then pass those token IDs to the various
 `JsonTokenGetValue` functions to retrieve their values.
 
 If you have a token and need to know what it is, you can use
@@ -109,8 +108,8 @@ JSON Creation
 In addition to parsing JSON, qb64pe-json allows you to create the Json
 structure yourself and then turn it into a JSON string (for storing or sending
 elsewhere). This is done by using the `JsonTokenCreate*()` functions. These
-functions create a new token and return its token id. You can then make use of
-this token id to add it to other tokens and build the Json structure. Objects
+functions create a new token and return its token ID. You can then make use of
+this token ID to add it to other tokens and build the Json structure. Objects
 and Arrays can have entries added to them via `JsonTokenArrayAdd` and
 `JsonTokenObjectAdd`.
 
@@ -132,5 +131,5 @@ and QB64-PE Strings can hold arbitrary byte data. As a result, when creating
 Json structures you need to ensure you either stick to strict 7-bit ASCII
 values in your strings, or manage the UTF-8 characters yourself. Additionally,
 qb64pe-json will not do any UTF-8 conversion, so strings returned by
-`JsonTokenGetValueStr$()` may contain UTF-8 character sequences dependending on
-the paticular JSON your parsing.
+`JsonTokenGetValueStr$()` may contain UTF-8 character sequences depending on
+the paticular JSON you're parsing.
