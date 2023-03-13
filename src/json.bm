@@ -178,8 +178,8 @@ End Function
 Function JsonTokenTotalChildren&(j As Json, idx As Long)
     Dim t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
-    If Not ___JsonIsValidToken&(j, idx) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenTotalChildren& = JsonHadError: Exit Function
+    If Not ___JsonIsValidToken&(j, idx) Then JsonTokenTotalChildren& = JsonHadError: Exit Function
 
     ___JsonGetToken j, idx, t
 
@@ -193,8 +193,8 @@ End Function
 Function JsonTokenGetChild&(j As Json, idx As Long, childIdx As Long)
     Dim t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
-    If Not ___JsonIsValidToken&(j, idx) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenGetChild& = JsonHadError: Exit Function
+    If Not ___JsonIsValidToken&(j, idx) Then JsonTokenGetChild& = JsonHadError: Exit Function
 
     If childIdx < 0 Or childIdx >= JsonTokenTotalChildren&(j, idx) Then
         ___JsonSetError JSON_ERR_OutOfRange, "Child index was out-of-bound of the array"
@@ -210,8 +210,8 @@ End function
 Function JsonTokenGetType&(j As Json, idx As Long)
     Dim t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
-    If Not ___JsonIsValidToken&(j, idx) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenGetType& = JsonHadError: Exit Function
+    If Not ___JsonIsValidToken&(j, idx) Then JsonTokenGetType& = JsonHadError: Exit Function
 
     ___JsonGetToken j, idx, t
 
@@ -221,8 +221,8 @@ End Function
 Function JsonTokenGetPrimType&(j As Json, idx As Long)
     Dim t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
-    If Not ___JsonIsValidToken&(j, idx) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then JsonTokenGetPrimType& = JsonHadError: Exit Function
+    If Not ___JsonIsValidToken&(j, idx) Then JsonTokenGetPrimType& = JsonHadError: Exit Function
 
     ___JsonGetToken j, idx, t
 
@@ -232,7 +232,7 @@ End Function
 Function ___JsonGetEmptyToken&(j As Json)
     Dim b As JsonTokenBlock, t As jsontok
     ___JsonResetError
-    If Not ___JsonIsInitialized&(j) Then Exit Function
+    If Not ___JsonIsInitialized&(j) Then ___JsonGetEmptyToken& = JsonHadError: Exit Function
 
     If j.NextFree = -1 Then
         Dim m As _Mem
@@ -504,6 +504,13 @@ Function JsonTokenCreateKey&(j As Json, k As String, inner As Long)
     If Not ___JsonIsInitialized&(j) Then JsonTokenCreateKey& = JsonHadError: Exit Function
     If Not ___JsonIsValidToken&(j, inner) Then JsonTokenCreateKey& = JsonHadError: Exit Function
 
+    If JsonTokenGetType&(j, inner) = JSONTOK_TYPE_KEY Then
+        JsonHadError = JSON_ERR_TokenWrongType
+        JsonError = "A Json Token of type Key was passed as the value token for a key, this is invalid"
+        JsonTokenCreateKey& = JsonHadError
+        Exit Function
+    End If
+
     idx = ___JsonGetEmptyToken&(j)
 
     ___JsonGetToken j, idx, t
@@ -540,8 +547,16 @@ Sub JsonTokenArrayAdd(j As Json, arrayIdx As Long, childidx As Long)
     Dim t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Sub
+
     If Not ___JsonIsValidToken&(j, arrayIdx) Then Exit Sub
+    If Not ___JsonIsRightType&(j, arrayIdx, JSONTOK_TYPE_ARRAY) Then Exit Sub
+
     If Not ___JsonIsValidToken&(j, childidx) Then Exit Sub
+    If JsonTokenGetType&(j, childidx) = JSONTOK_TYPE_KEY Then
+        JsonHadError = JSON_ERR_TokenWrongType
+        JsonError = "A Json Token of type Key was passed to ArrayAdd. Array's cannot contain Key tokens"
+        Exit Sub
+    End If
 
     ___JsonGetToken j, arrayIdx, t
     ___JsonTokenAddChild t, childidx
@@ -574,8 +589,12 @@ Sub JsonTokenObjectAdd(j As Json, objectIdx As Long, childidx As Long)
     Dim t As jsontok
     ___JsonResetError
     If Not ___JsonIsInitialized&(j) Then Exit Sub
+
     If Not ___JsonIsValidToken&(j, objectIdx) Then Exit Sub
+    If Not ___JsonIsRightType&(j, objectIdx, JSONTOK_TYPE_OBJECT) Then Exit Sub
+
     If Not ___JsonIsValidToken&(j, childidx) Then Exit Sub
+    If Not ___JsonIsRightType&(j, childidx, JSONTOK_TYPE_KEY) Then Exit Sub
 
     ___JsonGetToken j, objectIdx, t
     ___JsonTokenAddChild t, childidx
@@ -676,7 +695,8 @@ Function ___JsonRenderInternal$(j As Json, idx As Long, state As ___JsonFmtState
                     If t.intPart Then res = "true" Else res = "false"
 
                 CASE ELSE:
-                    res = "UNKNOWN" ' FIXME: BUG
+                    ' FIXME: This is very unlikely, but we should have better error reporting here
+                    res = "UNKNOWN"
 
             END SELECT
 
