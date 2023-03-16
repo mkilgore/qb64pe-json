@@ -22,8 +22,8 @@ Overall Design
 qb64pe-json works by turning a JSON structure into a collection of "tokens",
 which are kept internal to a `Json` object. Tokens are allocated as needed, and
 token IDs are returned from several Functions. You can then pass a token
-ID into many of the APIs to interact with a the token, such as get its value,
-get its children, modify it, etc. Valid token IDs are always positive.
+ID into many of the APIs to interact with the token, such as get its value,
+get its children, etc. Valid token IDs are always positive.
 
 The main Type in qb64pe-json is the `Json` Type. After declaring one, you need
 to pass it to `JsonInit` to initialize it, and eventually pass it to
